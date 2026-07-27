@@ -10,7 +10,8 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
-supabase/
+supabase/*
+!supabase/migrations
 .impeccable/
 
 # typescript
