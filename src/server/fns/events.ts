@@ -119,18 +119,29 @@ export const getEvents = createServerFn({ method: "GET" })
 
       if (forceRefresh) {
         // Re-triage can legitimately drop items a previous run kept (e.g.
-        // after tightening the prompt). Clear today's cache for this
-        // category+region now that we have a fresh result to replace it with
-        // — decision_makers/predictions/etc. cascade-delete with the event
-        // row — so a dropped item can't linger just because its row was
-        // never removed. Deliberately done AFTER the fetch/triage succeed,
-        // not before, so a live-fetch failure can't wipe out a working cache.
-        const { error: clearError } = await db
+        // after tightening the prompt). Clear only those dropped rows —
+        // decision_makers/predictions/etc. cascade-delete with the event row
+        // — so a dropped item can't linger just because it was never
+        // removed. Deliberately scoped to rows NOT in the fresh kept set
+        // (rather than wiping everything for this category+region+day) so a
+        // story that survives re-triage unchanged keeps its existing row and
+        // `id` — the upsert below updates it in place via onConflict instead
+        // of deleting and recreating it, which would otherwise churn its
+        // React key and flash the card out and back in on every refresh.
+        // Also deliberately done AFTER the fetch/triage succeed, not before,
+        // so a live-fetch failure can't wipe out a working cache.
+        const keptUrls = kept.map((t) => articles[t.index].link)
+        let clearQuery = db
           .from("events")
           .delete()
           .eq("category", category)
           .eq("region", region)
           .eq("cache_date", cacheDate)
+        if (keptUrls.length > 0) {
+          const urlList = keptUrls.map((u) => `"${u.replace(/"/g, '\\"')}"`).join(",")
+          clearQuery = clearQuery.not("source_url", "in", `(${urlList})`)
+        }
+        const { error: clearError } = await clearQuery
         if (clearError) throw new Error(clearError.message)
       }
 

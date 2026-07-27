@@ -12,6 +12,18 @@ function languageSuffix(region: NewsRegion): string {
   return promptLanguage ? ` Write this field in ${promptLanguage}.` : ""
 }
 
+// Without a calibration rubric, confidence scores cluster tightly around a
+// "safe" default (observed: ~85 on nearly every item) instead of actually
+// tracking how well-evidenced the call is. Spelling out what each band means
+// forces real differentiation.
+const CONFIDENCE_RUBRIC =
+  "0-100 confidence, calibrated against the strength of the evidence: " +
+  "under 40 for a single thin data point or mostly inferred from role alone; " +
+  "40-70 for a plausible read with some ambiguity or a limited public record; " +
+  "70-90 for multiple consistent, well-documented behavioral signals; " +
+  "90+ only for an extensively documented, textbook-clear pattern. Most real " +
+  "calls should NOT land in the 80-90 band — use the full range."
+
 // ============================================================
 // Call 0 — category triage: drop trivial/no-named-driver stories,
 // tag each survivor with its single primary decision maker + MBTI
@@ -42,7 +54,7 @@ export function eventTriageJsonSchema(region: NewsRegion) {
             primary_maker_name: { type: "string", description: `Their real name.${lang}` },
             primary_maker_role: { type: "string", description: `Their role in this story.${lang}` },
             mbti: { type: "string", enum: MBTI_TYPES as unknown as string[] },
-            confidence: { type: "integer", minimum: 0, maximum: 100 },
+            confidence: { type: "integer", minimum: 0, maximum: 100, description: CONFIDENCE_RUBRIC },
           },
           required: ["index", "keep"],
         },
@@ -96,7 +108,7 @@ export function ingestJsonSchema(region: NewsRegion) {
               type: "string",
               description: `1-2 sentences grounding the MBTI call in public behavior.${lang}`,
             },
-            confidence: { type: "integer", minimum: 0, maximum: 100 },
+            confidence: { type: "integer", minimum: 0, maximum: 100, description: CONFIDENCE_RUBRIC },
           },
           required: ["name", "role", "mbti", "reasoning", "confidence"],
         },
@@ -134,7 +146,12 @@ export function timelineJsonSchema(region: NewsRegion) {
   return {
     type: "object",
     properties: {
-      overall_confidence: { type: "integer", minimum: 0, maximum: 100 },
+      overall_confidence: {
+        type: "integer",
+        minimum: 0,
+        maximum: 100,
+        description: CONFIDENCE_RUBRIC,
+      },
       reasoning_summary: {
         type: "string",
         description: `1-2 sentence summary of the overall timeline's reasoning.${lang}`,
@@ -157,7 +174,7 @@ export function timelineJsonSchema(region: NewsRegion) {
               type: "string",
               description: `How the drivers' MBTI traits shape this outcome.${lang}`,
             },
-            confidence: { type: "integer", minimum: 0, maximum: 100 },
+            confidence: { type: "integer", minimum: 0, maximum: 100, description: CONFIDENCE_RUBRIC },
           },
           required: [
             "day_offset",
