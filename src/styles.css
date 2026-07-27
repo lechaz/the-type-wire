@@ -1,13 +1,59 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource-variable/inter";
+@import "@fontsource/zilla-slab/400.css";
+@import "@fontsource/zilla-slab/700.css";
+@import "@fontsource/source-serif-4/400.css";
+@import "@fontsource/source-serif-4/600.css";
+@import "@fontsource/courier-prime/400.css";
+@import "@fontsource/courier-prime/700.css";
+@import "@fontsource/noto-serif-tc/400.css";
+@import "@fontsource/noto-serif-tc/700.css";
+@import "@fontsource/noto-sans-tc/400.css";
+@import "@fontsource/noto-sans-tc/700.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+DIRECTION CONTRACT
+THESIS: Predictions from a personality-inference engine, delivered with the
+total unblinking gravity of a wire-service bulletin — the joke is the
+deadpan, not a punchline. Refuses both AI-mystic dark-oracle cosplay and
+cutesy meme-app whimsy.
+OWN-WORLD: Cream newsprint ground, warm-black ink, one alarm-red wire-stamp
+accent. Zilla Slab masthead/headlines, Source Serif 4 body, Courier Prime
+datelines/stamps. Flat rule-bordered clippings, zero shadows, near-zero radius.
+STORY: Reader opens the wire, sees today's dispatches stamped by category,
+scans a 16-type bento legend once, clicks a headline, gets a byline strip
+plus one confident forecast line — no button to hunt for.
+FIRST VIEWPORT: Masthead "THE TYPE WIRE" + dateline rule, a bento legend of
+16 stamped MBTI tiles directly below (the "glorified legend"), then the
+day's headline clippings.
+FORM: Whole-site identity replacement, direction pinned by the user's brief
+(deadpan wire-service tabloid), confirmed through one structured question
+round covering visual world, nav structure, and naming. See DESIGN.md.
+*/
+
 @theme inline {
-    --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
+    --font-sans: 'Inter Variable', 'Noto Sans TC', sans-serif;
+    --font-display: 'Zilla Slab', 'Noto Serif TC', Georgia, serif;
+    --font-heading: var(--font-display);
+    --font-serif: 'Source Serif 4', 'Noto Serif TC', Georgia, serif;
+    --font-mono: 'Courier Prime', 'Noto Sans TC', ui-monospace, monospace;
+
+    --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+    --color-mbti-analyst: oklch(0.40 0.10 265);
+    --color-mbti-diplomat: oklch(0.45 0.09 150);
+    --color-mbti-sentinel: oklch(0.48 0.015 240);
+    --color-mbti-explorer: oklch(0.55 0.14 50);
+    --color-wire-red: oklch(0.52 0.20 25);
+    --color-wire-red-foreground: oklch(0.99 0.005 85);
+    --color-ink-muted: oklch(0.45 0.02 60);
+
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,73 +94,45 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * The Type Wire — one fixed newsprint look, no light/dark toggle. Light by
+ * material choice (paper, ink), not by default; see DESIGN.md.
+ */
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
-}
+    color-scheme: light;
 
-.dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    --background: oklch(0.965 0.012 85);
+    --foreground: oklch(0.20 0.015 55);
+    --card: oklch(0.99 0.008 85);
+    --card-foreground: oklch(0.20 0.015 55);
+    --popover: oklch(0.99 0.008 85);
+    --popover-foreground: oklch(0.20 0.015 55);
+    --primary: oklch(0.20 0.015 55);
+    --primary-foreground: oklch(0.965 0.012 85);
+    --secondary: oklch(0.94 0.012 85);
+    --secondary-foreground: oklch(0.20 0.015 55);
+    --muted: oklch(0.94 0.012 85);
+    --muted-foreground: oklch(0.45 0.02 60);
+    --accent: oklch(0.94 0.012 85);
+    --accent-foreground: oklch(0.20 0.015 55);
+    --destructive: oklch(0.52 0.20 25);
+    --border: oklch(0.20 0.015 55 / 18%);
+    --input: oklch(0.20 0.015 55 / 22%);
+    --ring: oklch(0.20 0.015 55 / 55%);
+    --chart-1: oklch(0.40 0.10 265);
+    --chart-2: oklch(0.45 0.09 150);
+    --chart-3: oklch(0.48 0.015 240);
+    --chart-4: oklch(0.55 0.14 50);
+    --chart-5: oklch(0.52 0.20 25);
+    --radius: 0.125rem;
+    --sidebar: oklch(0.99 0.008 85);
+    --sidebar-foreground: oklch(0.20 0.015 55);
+    --sidebar-primary: oklch(0.20 0.015 55);
+    --sidebar-primary-foreground: oklch(0.965 0.012 85);
+    --sidebar-accent: oklch(0.94 0.012 85);
+    --sidebar-accent-foreground: oklch(0.20 0.015 55);
+    --sidebar-border: oklch(0.20 0.015 55 / 18%);
+    --sidebar-ring: oklch(0.20 0.015 55 / 55%);
 }
 
 @layer base {
@@ -127,4 +145,59 @@
   html {
     @apply font-sans;
     }
+  h1, h2, h3, h4 {
+    @apply font-display;
+    }
+}
+
+@layer utilities {
+  @keyframes card-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .animate-card-in {
+    animation: card-in 300ms var(--ease-out-strong) both;
+  }
+
+  @keyframes mbti-reveal {
+    from { opacity: 0.35; filter: blur(4px); }
+    to { opacity: 1; filter: blur(0); }
+  }
+  .mbti-reveal {
+    animation: mbti-reveal 400ms var(--ease-out-strong) both;
+  }
+
+  @keyframes confidence-fill {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(var(--target-scale)); }
+  }
+  .confidence-fill {
+    animation: confidence-fill 500ms var(--ease-out-strong) both;
+  }
+
+  @keyframes predict-sweep {
+    from { clip-path: inset(0 100% 0 0); }
+    to { clip-path: inset(0 0 0 0); }
+  }
+  .predict-sweep {
+    animation: predict-sweep 1.6s linear forwards;
+  }
+
+  @keyframes route-progress-sweep {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(250%); }
+  }
+  .route-progress-sweep {
+    animation: route-progress-sweep 1s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-card-in,
+    .mbti-reveal,
+    .confidence-fill,
+    .predict-sweep,
+    .route-progress-sweep {
+      animation: none;
+    }
+  }
 }

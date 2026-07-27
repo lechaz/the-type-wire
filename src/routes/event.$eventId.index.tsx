@@ -1,0 +1,174 @@
+import { createFileRoute } from "@tanstack/react-router"
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
+import { getEventDetail } from "@/server/fns/event-detail"
+import { getPrediction, runScenario } from "@/server/fns/prediction"
+import { DecisionMakerCard } from "@/components/decision-maker-card"
+import { PredictionTimeline } from "@/components/prediction-timeline"
+import { WhatIfPanel } from "@/components/what-if-panel"
+import { CATEGORY_LABELS } from "@/lib/mbti"
+import { monoLabelClass, type NewsRegion } from "@/lib/region"
+import { stringsFor } from "@/lib/i18n"
+import { cn } from "@/lib/utils"
+
+const DEFAULT_BRANCH_COLOR = "#c21725"
+
+export const Route = createFileRoute("/event/$eventId/")({
+  loader: async ({ params }) => {
+    const detail = await getEventDetail({ data: { eventId: params.eventId } })
+    const prediction = await getPrediction({ data: { eventId: params.eventId } })
+    return { detail, prediction }
+  },
+  component: EventPage,
+})
+
+type ScenarioResult = Awaited<ReturnType<typeof runScenario>>
+
+function EventPage() {
+  const { detail, prediction } = Route.useLoaderData()
+  const { eventId } = Route.useParams()
+  const { event, decisionMakers } = detail
+  const region = event.region as NewsRegion
+  const t = stringsFor(region)
+  const [branches, setBranches] = useState<ScenarioResult[]>([])
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [dragging, setDragging] = useState(false)
+  const [overflowing, setOverflowing] = useState(false)
+
+  const makers = decisionMakers.map((m) => ({ id: m.id, name: m.name, mbti: m.mbti }))
+
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+    const check = () => setOverflowing(el.scrollWidth > el.clientWidth)
+    check()
+    const ro = new ResizeObserver(check)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [branches.length])
+
+  function handleScrollPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    const el = scrollRef.current
+    if (!el || e.button !== 0 || !overflowing) return
+    const startX = e.clientX
+    const startScrollLeft = el.scrollLeft
+    let moved = false
+
+    function onMove(ev: PointerEvent) {
+      const dx = ev.clientX - startX
+      if (Math.abs(dx) > 3) {
+        moved = true
+        setDragging(true)
+      }
+      if (moved) el!.scrollLeft = startScrollLeft - dx
+    }
+    function onUp() {
+      window.removeEventListener("pointermove", onMove)
+      window.removeEventListener("pointerup", onUp)
+      setDragging(false)
+    }
+    window.addEventListener("pointermove", onMove)
+    window.addEventListener("pointerup", onUp)
+  }
+
+  return (
+    <main className="mx-auto max-w-5xl px-6 pt-8 pb-14">
+      <p
+        className={cn(
+          "font-mono text-[11px] font-bold text-muted-foreground",
+          monoLabelClass(region),
+        )}
+      >
+        {CATEGORY_LABELS[region][event.category]} {t.desk}
+      </p>
+      <h1 className="mt-1 font-display text-2xl leading-tight font-bold text-foreground sm:text-3xl">
+        {event.headline}
+      </h1>
+      <p className="mt-2 max-w-[65ch] font-serif text-sm text-muted-foreground">{event.summary}</p>
+      <a
+        href={event.source_url}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-1 inline-block font-mono text-xs text-muted-foreground underline underline-offset-4 hover:text-foreground"
+      >
+        {event.source_name} ↗
+      </a>
+
+      <section aria-labelledby="byline-heading" className="mt-8 border border-border">
+        <h2
+          id="byline-heading"
+          className={cn(
+            "border-b border-border px-3 py-1.5 font-mono text-[11px] text-muted-foreground",
+            monoLabelClass(region),
+          )}
+        >
+          {t.byline}
+        </h2>
+        <div className="px-3">
+          {decisionMakers.map((m, i) => (
+            <DecisionMakerCard
+              key={m.id}
+              name={m.name}
+              role={m.role}
+              mbti={m.mbti}
+              reasoning={m.reasoning}
+              confidence={m.confidence}
+              index={i}
+              region={region}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="forecast-heading" className="mt-8">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 id="forecast-heading" className="font-display text-xl font-bold text-foreground">
+            {t.forecastHeading}
+          </h2>
+          <WhatIfPanel
+            eventId={eventId}
+            makers={makers}
+            region={region}
+            onBranchCreated={(result) => setBranches((prev) => [...prev, result])}
+          />
+        </div>
+
+        {/* Default + what-if branches sit side by side as equal-weight peers —
+            color tells them apart, not indentation. Scrolls horizontally only
+            once branches actually accumulate past what the viewport fits. */}
+        <div
+          ref={scrollRef}
+          onPointerDown={handleScrollPointerDown}
+          className={cn(
+            "mt-4 flex items-start gap-6 overflow-x-auto pb-2",
+            overflowing && "cursor-grab select-none [&_*]:cursor-grab",
+            dragging && "cursor-grabbing [&_*]:cursor-grabbing",
+          )}
+        >
+          <div className="w-[22rem] shrink-0">
+            <PredictionTimeline
+              label={t.defaultForecast}
+              branchColor={DEFAULT_BRANCH_COLOR}
+              overallConfidence={prediction.prediction.overall_confidence}
+              reasoningSummary={prediction.prediction.reasoning_summary}
+              nodes={prediction.nodes}
+              region={region}
+            />
+          </div>
+
+          {branches.map((b) => (
+            <div key={b.scenario.id} className="w-[22rem] shrink-0">
+              <PredictionTimeline
+                label={b.scenario.label}
+                branchColor={b.scenario.branch_color}
+                overallConfidence={b.prediction.overall_confidence}
+                reasoningSummary={b.prediction.reasoning_summary}
+                nodes={b.nodes}
+                region={region}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+    </main>
+  )
+}

@@ -10,6 +10,8 @@ dist-ssr
 .vinxi
 __unconfig*
 todos.json
+supabase/
+.impeccable/
 
 # typescript
 *.tsbuildinfo
