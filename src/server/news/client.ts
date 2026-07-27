@@ -11,8 +11,6 @@ const ALL_PROVIDERS: NewsProvider[] = ["currents", "rapidapi"]
 // providers and dedupe — that's what gets 3-5+ articles/category reliably.
 const FORCE_PROVIDER: NewsProvider | null = null //set null to query both providers, set "currents" or "rapidapi" to force one
 
-const CURRENTS_API_BASE = "https://api.currentsapi.services/v1"
-
 // RapidAPI's Real-Time News Data 400s on the plain "zh" tag region.ts uses
 // for TW — it wants the BCP47 tag zh-Hant specifically. Verified live.
 const RAPIDAPI_LANG_OVERRIDE: Partial<Record<NewsRegion, string>> = { tw: "zh-Hant" }
@@ -39,12 +37,13 @@ async function throttleRapidApi() {
 
 async function searchCurrentsOnce(query: string, region: NewsRegion): Promise<Response> {
   const key = process.env.CURRENTS_API_KEY
-  if (!key) {
-    throw new Error("Missing CURRENTS_API_KEY. Check .env.local.")
+  const base = process.env.CURRENTS_API_BASE
+  if (!key || !base) {
+    throw new Error("Missing CURRENTS_API_KEY or CURRENTS_API_BASE. Check .env.local.")
   }
 
   const { country, lang } = REGION_CONFIG[region]
-  const url = new URL(`${CURRENTS_API_BASE}/search`)
+  const url = new URL(`${base}/search`)
   url.searchParams.set("keywords", query)
   url.searchParams.set("country", country)
   url.searchParams.set("language", lang)

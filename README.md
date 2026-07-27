@@ -36,7 +36,7 @@ npm run dev
 Requires the following environment variables (`.env.local` for local dev, or provisioned in Vercel for deployed environments):
 
 - `GEMINI_API_KEY`
-- `CURRENTS_API_KEY`
+- `CURRENTS_API_KEY`, `CURRENTS_API_BASE`
 - `RAPIDAPI_KEY`, `RAPIDAPI_HOST`
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 
