@@ -130,19 +130,73 @@ function fetchFromProvider(provider: NewsProvider, query: string, region: NewsRe
   return provider === "currents" ? searchCurrents(query, region) : searchRapidApi(query, region)
 }
 
-// Collapse cross-provider duplicates of the same story: same link, or same
-// title once case/punctuation/whitespace differences are normalized away.
+function normalizeTitle(title: string): string {
+  return title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "")
+}
+
+// Same outlet often runs the same story through both providers with a
+// trailing suffix appended (site name, section tag, byline) — e.g.
+// "...拜會陳建仁 產業" vs "...拜會陳建仁｜聯合新聞網". Exact-match on the
+// normalized title misses these, so treat titles as the same story once one
+// is a long-enough prefix match of the other, not just when they're equal.
+function isSameStory(a: string, b: string): boolean {
+  if (a === b) return true
+  const shorter = Math.min(a.length, b.length)
+  if (shorter < 10) return false // too short to fuzzy-match safely
+  let common = 0
+  while (common < shorter && a[common] === b[common]) common++
+  return common / shorter >= 0.75
+}
+
+// Collapse cross-provider duplicates of the same story: same link, or a
+// near-duplicate title (see isSameStory).
 function dedupeArticles(articles: NewsArticle[]): NewsArticle[] {
-  const seen = new Set<string>()
   const deduped: NewsArticle[] = []
+  const seenLinks = new Set<string>()
+  const seenTitleKeys: string[] = []
+
   for (const article of articles) {
-    const titleKey = article.title.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, "")
-    if (seen.has(article.link) || seen.has(titleKey)) continue
-    seen.add(article.link)
-    seen.add(titleKey)
+    if (seenLinks.has(article.link)) continue
+    const titleKey = normalizeTitle(article.title)
+    if (seenTitleKeys.some((seen) => isSameStory(seen, titleKey))) continue
+
+    seenLinks.add(article.link)
+    seenTitleKeys.push(titleKey)
     deduped.push(article)
   }
   return deduped
+}
+
+// Relevance-check-only terms, additional to what's actually sent as the
+// provider search query. Real headlines almost never spell out "artificial
+// intelligence" — they say "AI" — so checking only the literal search
+// phrase rejects genuine AI stories while they slip through under whatever
+// other category's query happens to match a stray word in their text.
+// Not merged into CATEGORY_QUERIES because it's untested whether the
+// providers treat a multi-word "keywords"/"query" param as an AND-phrase or
+// an OR-relevance search — safer to leave the provider-facing query alone.
+const RELEVANCE_TERM_ALIASES: Partial<Record<NewsCategory, string>> = {
+  ai: "AI",
+}
+
+function escapeRegExp(term: string): string {
+  return term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+// Both providers' "keyword search" is looser than the name implies — it can
+// surface articles that never mention the query at all (wrong section tag
+// upstream, fuzzy relevance scoring, etc). Require at least one query term
+// to literally appear in the title or snippet before it reaches triage.
+// Matched at term boundaries (not bare substring) so a short term like "AI"
+// doesn't match inside "said" or "domain".
+function isOnTopic(article: NewsArticle, category: NewsCategory, query: string): boolean {
+  const haystack = `${article.title} ${article.snippet ?? ""}`
+  const terms = `${query} ${RELEVANCE_TERM_ALIASES[category] ?? ""}`.split(/\s+/).filter(Boolean)
+
+  return terms.some((term) => {
+    const pattern = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(term)}(?![\\p{L}\\p{N}])`, "iu")
+    return pattern.test(haystack)
+  })
 }
 
 export async function fetchTopArticles(
@@ -165,5 +219,7 @@ export async function fetchTopArticles(
     throw firstError instanceof Error ? firstError : new Error("All news providers returned zero articles")
   }
 
-  return dedupeArticles(articles).slice(0, 20)
+  return dedupeArticles(articles)
+    .filter((a) => isOnTopic(a, category, query))
+    .slice(0, 20)
 }
