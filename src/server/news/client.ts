@@ -35,6 +35,8 @@ async function throttleRapidApi() {
   rapidApiLastCallAt = Date.now()
 }
 
+const LOOKBACK_DAYS = 3
+
 async function searchCurrentsOnce(query: string, region: NewsRegion): Promise<Response> {
   const key = process.env.CURRENTS_API_KEY
   const base = process.env.CURRENTS_API_BASE
@@ -43,10 +45,15 @@ async function searchCurrentsOnce(query: string, region: NewsRegion): Promise<Re
   }
 
   const { country, lang } = REGION_CONFIG[region]
+  const startDate = new Date(Date.now() - LOOKBACK_DAYS * 24 * 60 * 60 * 1000)
   const url = new URL(`${base}/search`)
   url.searchParams.set("keywords", query)
   url.searchParams.set("country", country)
   url.searchParams.set("language", lang)
+  // Verified live: Currents wants exactly Date#toISOString()'s format
+  // (trailing ".000Z") — the RFC 3339 "+00:00" offset form its own error
+  // message asks for gets rejected as "Must be RFC 3339 format".
+  url.searchParams.set("start_date", startDate.toISOString())
 
   return fetch(url, {
     headers: { Authorization: key },
@@ -96,7 +103,12 @@ async function searchRapidApiOnce(query: string, region: NewsRegion): Promise<Re
   const url = new URL(`https://${host}/search`)
   url.searchParams.set("query", query)
   url.searchParams.set("limit", "20")
-  url.searchParams.set("time_published", "1d")
+  // "1d" was too narrow a lookback for thin-news days; broadened to match
+  // Currents' LOOKBACK_DAYS=3. RapidAPI's time_published takes discrete
+  // buckets, not arbitrary day counts, and "1w" is the nearest one ≥3
+  // days — unverified live since the BASIC plan's monthly quota is
+  // currently exhausted (confirmed via 429 on 2026-07-26).
+  url.searchParams.set("time_published", "1w")
   url.searchParams.set("country", country)
   url.searchParams.set("lang", lang)
 
