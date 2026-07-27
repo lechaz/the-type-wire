@@ -194,20 +194,65 @@ function escapeRegExp(term: string): string {
   return term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
+// CJK text has no spaces between words, so a compound term is almost always
+// flanked by another CJK character — a letter-adjacency boundary check
+// would reject nearly every real match (e.g. "球界" inside "球界性別歧視").
+// Boundary-check only Latin terms (where it prevents a short one like "AI"
+// matching inside "said"); CJK terms use plain substring containment.
+const CJK_PATTERN = /[㐀-鿿]/
+
+function matchesAnyTerm(haystack: string, terms: string[]): boolean {
+  return terms.some((term) => {
+    if (CJK_PATTERN.test(term)) return haystack.includes(term)
+    const pattern = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(term)}(?![\\p{L}\\p{N}])`, "iu")
+    return pattern.test(haystack)
+  })
+}
+
 // Both providers' "keyword search" is looser than the name implies — it can
 // surface articles that never mention the query at all (wrong section tag
 // upstream, fuzzy relevance scoring, etc). Require at least one query term
 // to literally appear in the title or snippet before it reaches triage.
-// Matched at term boundaries (not bare substring) so a short term like "AI"
-// doesn't match inside "said" or "domain".
 function isOnTopic(article: NewsArticle, category: NewsCategory, query: string): boolean {
   const haystack = `${article.title} ${article.snippet ?? ""}`
   const terms = `${query} ${RELEVANCE_TERM_ALIASES[category] ?? ""}`.split(/\s+/).filter(Boolean)
+  return matchesAnyTerm(haystack, terms)
+}
 
-  return terms.some((term) => {
-    const pattern = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(term)}(?![\\p{L}\\p{N}])`, "iu")
-    return pattern.test(haystack)
-  })
+// NEWS_CATEGORIES has no "sports" entry, but keyword search (especially
+// Currents' loose CJK matching) regularly surfaces sports stories under
+// other categories anyway — a coincidental keyword hit, an outlet's sports
+// section getting tagged generically, etc. Exclude them outright rather
+// than let them compete with genuinely on-topic stories for a slot.
+const SPORTS_EXCLUSION_TERMS = [
+  "sports",
+  "football",
+  "soccer",
+  "basketball",
+  "baseball",
+  "tennis",
+  "olympic",
+  "olympics",
+  "nba",
+  "nfl",
+  "mlb",
+  "nhl",
+  "fifa",
+  "world cup",
+  "棒球",
+  "籃球",
+  "足球",
+  "網球",
+  "奧運",
+  "世界盃",
+  "球員",
+  "球隊",
+  "球界",
+]
+
+function isSportsNews(article: NewsArticle): boolean {
+  const haystack = `${article.title} ${article.snippet ?? ""}`
+  return matchesAnyTerm(haystack, SPORTS_EXCLUSION_TERMS)
 }
 
 export async function fetchTopArticles(
@@ -232,5 +277,6 @@ export async function fetchTopArticles(
 
   return dedupeArticles(articles)
     .filter((a) => isOnTopic(a, category, query))
+    .filter((a) => !isSportsNews(a))
     .slice(0, 20)
 }
