@@ -1,4 +1,6 @@
+import { useState } from "react"
 import { MbtiFigurine } from "@/components/mbti-figurine"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { MBTI_TYPES, mbtiFamily, type MbtiFamily } from "@/lib/mbti"
 import { MBTI_DESCRIPTIONS } from "@/lib/mbti-descriptions"
 import { functionsFor } from "@/lib/mbti-functions"
@@ -27,6 +29,7 @@ const FAMILIES: MbtiFamily[] = ["analyst", "diplomat", "sentinel", "explorer"]
 export function MbtiCodex({ region }: { region: NewsRegion }) {
   const t = stringsFor(region)
   const descriptions = MBTI_DESCRIPTIONS[region]
+  const [openKey, setOpenKey] = useState<string | null>(null)
 
   const FAMILY_LABEL: Record<MbtiFamily, string> = {
     analyst: t.familyAnalysts,
@@ -65,17 +68,33 @@ export function MbtiCodex({ region }: { region: NewsRegion }) {
                       </span>
                     </p>
                     <p className="font-mono text-[10px] tracking-wide text-muted-foreground">
-                      {functionsFor(type, region).map((f, i) => (
-                        <span key={f.role}>
-                          {i > 0 && " · "}
-                          <span
-                            title={`${f.code} · ${ROLE_LABEL[f.role]}: ${f.name}`}
-                            className="cursor-help whitespace-nowrap underline decoration-dotted underline-offset-2"
-                          >
-                            {f.code} ({ROLE_ABBR[f.role]})
+                      {functionsFor(type, region).map((f, i) => {
+                        const key = `${type}-${f.role}`
+                        return (
+                          <span key={f.role}>
+                            {i > 0 && " · "}
+                            <Tooltip
+                              open={openKey === key}
+                              onOpenChange={(open) => setOpenKey(open ? key : null)}
+                            >
+                              <TooltipTrigger
+                                render={
+                                  <button
+                                    type="button"
+                                    onClick={() => setOpenKey((k) => (k === key ? null : key))}
+                                    className="cursor-help whitespace-nowrap font-mono text-[10px] tracking-wide text-muted-foreground underline decoration-dotted underline-offset-2 focus-visible:outline-none"
+                                  />
+                                }
+                              >
+                                {f.code} ({ROLE_ABBR[f.role]})
+                              </TooltipTrigger>
+                              <TooltipContent className="max-w-64 rounded-none" sideOffset={6}>
+                                {f.code} · {ROLE_LABEL[f.role]}: {f.name}
+                              </TooltipContent>
+                            </Tooltip>
                           </span>
-                        </span>
-                      ))}
+                        )
+                      })}
                     </p>
                     <p className="mt-1 font-serif text-xs text-muted-foreground">{info.blurb}</p>
                   </div>

@@ -25,7 +25,7 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const { category, region } = Route.useSearch()
-  const { events, unavailable } = Route.useLoaderData()
+  const { events, unavailable, noNewUpdates } = Route.useLoaderData()
   const router = useRouter()
   const [refreshing, setRefreshing] = useState(false)
   const t = stringsFor(region)
@@ -34,9 +34,9 @@ function Home() {
   async function handleRefresh() {
     setRefreshing(true)
     try {
-      await getEvents({ data: { category, region, forceRefresh: true } })
+      const result = await getEvents({ data: { category, region, forceRefresh: true } })
       await router.invalidate()
-      toast.success(t.refreshedToast(label))
+      toast.success(result.noNewUpdates ? t.noNewUpdatesToast(label) : t.refreshedToast(label))
     } catch {
       toast.error(t.refreshFailedToast)
     } finally {
@@ -59,6 +59,10 @@ function Home() {
         <h2 id="dispatches-heading" className="sr-only">
           {label} dispatches
         </h2>
+
+        {noNewUpdates && events.length > 0 && (
+          <p className="mb-4 font-mono text-[11px] text-muted-foreground">{t.noNewUpdatesNote}</p>
+        )}
 
         {events.length === 0 && (
           <Empty className="border">

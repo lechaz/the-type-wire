@@ -127,7 +127,7 @@ export const getEvents = createServerFn({ method: "GET" })
 
     if (!forceRefresh) {
       const cached = await loadCachedEvents(db, category, region, cacheDate)
-      if (cached.length > 0) return { events: cached, unavailable: false }
+      if (cached.length > 0) return { events: cached, unavailable: false, noNewUpdates: false }
     }
 
     try {
@@ -143,6 +143,17 @@ export const getEvents = createServerFn({ method: "GET" })
           ).items.filter((t) => t.keep && t.primary_maker_name && t.mbti && articles[t.index])
         : []
 
+      // An empty kept set means either the fetch itself came back dry (a
+      // thin news day, or the provider hiccuped) or triage rejected
+      // everything on offer — either way there's no fresh signal to act on.
+      // Leave the existing cache untouched and tell the caller nothing new
+      // came in, instead of wiping today's rows and showing an empty page
+      // where cached articles used to be.
+      if (kept.length === 0) {
+        const fallback = await loadCachedEvents(db, category, region)
+        return { events: fallback, unavailable: false, noNewUpdates: fallback.length > 0 }
+      }
+
       if (forceRefresh) {
         // Re-triage can legitimately drop items a previous run kept (e.g.
         // after tightening the prompt). Clear only those dropped rows —
@@ -157,21 +168,16 @@ export const getEvents = createServerFn({ method: "GET" })
         // Also deliberately done AFTER the fetch/triage succeed, not before,
         // so a live-fetch failure can't wipe out a working cache.
         const keptUrls = kept.map((t) => articles[t.index].link)
-        let clearQuery = db
+        const urlList = keptUrls.map((u) => `"${u.replace(/"/g, '\\"')}"`).join(",")
+        const { error: clearError } = await db
           .from("events")
           .delete()
           .eq("category", category)
           .eq("region", region)
           .eq("cache_date", cacheDate)
-        if (keptUrls.length > 0) {
-          const urlList = keptUrls.map((u) => `"${u.replace(/"/g, '\\"')}"`).join(",")
-          clearQuery = clearQuery.not("source_url", "in", `(${urlList})`)
-        }
-        const { error: clearError } = await clearQuery
+          .not("source_url", "in", `(${urlList})`)
         if (clearError) throw new Error(clearError.message)
       }
-
-      if (kept.length === 0) return { events: [], unavailable: false }
 
       const rows = kept.map((t) => {
         const a = articles[t.index]
@@ -240,7 +246,11 @@ export const getEvents = createServerFn({ method: "GET" })
         if (seedError) throw new Error(seedError.message)
       }
 
-      return { events: await loadCachedEvents(db, category, region, cacheDate), unavailable: false }
+      return {
+        events: await loadCachedEvents(db, category, region, cacheDate),
+        unavailable: false,
+        noNewUpdates: false,
+      }
     } catch (err) {
       // News API or Gemini quota/rate-limit hit (or any other live-fetch
       // failure) — degrade to whatever's cached instead of erroring the page.
@@ -251,6 +261,6 @@ export const getEvents = createServerFn({ method: "GET" })
       // throwing a raw error to the page — there's simply nothing to show.
       console.error(`[getEvents] live fetch failed for ${category}/${region}, serving cache:`, err)
       const fallback = await loadCachedEvents(db, category, region)
-      return { events: fallback, unavailable: fallback.length === 0 }
+      return { events: fallback, unavailable: fallback.length === 0, noNewUpdates: false }
     }
   })
