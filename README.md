@@ -8,7 +8,7 @@ Delivered in-character as a deadpan wire-service bulletin: total bureaucratic se
 
 ## How it works
 
-1. **Ingest** — [Currents API](https://currentsapi.services/) pulls today's headlines per category and region.
+1. **Ingest** — [Currents API](https://currentsapi.services/) and [RapidAPI Real-Time News Data](https://rapidapi.com/) are queried in parallel per category/region and deduped into one pool (by URL and normalized title); either can be forced alone via the `FORCE_PROVIDER` flag in `src/server/news/client.ts` for debugging.
 2. **Triage** — Gemini (`gemini-3.5-flash-lite`) tags each story's primary decision-maker with an MBTI type and reasoning, dropping driver-less roundups and pure listicles.
 3. **Predict** — Gemini reasons a 30-day forecast timeline from that person's personality read. The default timeline is wire-red; user-created what-if branches (swapping in a different MBTI type) take the ink color of that personality family.
 4. **Serve** — Supabase caches ingested stories, triage results, and predictions per category/region/day; a manual "Refresh" re-triggers ingestion on demand. If an API quota is exhausted, cached articles are served instead of erroring out.
@@ -24,7 +24,7 @@ Delivered in-character as a deadpan wire-service bulletin: total bureaucratic se
 - Tailwind v4 + [shadcn/ui](https://ui.shadcn.com/) (`base-nova` preset, Base UI primitives)
 - [Supabase](https://supabase.com/) (Postgres + migrations)
 - [Gemini](https://ai.google.dev/) (`@google/genai`) for triage and prediction generation
-- [Currents API](https://currentsapi.services/) for headline ingestion
+- [Currents API](https://currentsapi.services/) + [RapidAPI Real-Time News Data](https://rapidapi.com/) for headline ingestion
 
 ## Development
 
@@ -37,6 +37,7 @@ Requires the following environment variables (`.env.local` for local dev, or pro
 
 - `GEMINI_API_KEY`
 - `CURRENTS_API_KEY`
+- `RAPIDAPI_KEY`, `RAPIDAPI_HOST`
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 
 ## Design

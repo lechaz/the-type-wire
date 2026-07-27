@@ -18,9 +18,11 @@ export const NewsSearchResponseSchema = z.object({
   news: z.array(CurrentsArticleSchema),
 })
 
-// Normalized shape the rest of the app consumes, decoupled from the
-// upstream provider's field names so a future provider swap stays local
-// to client.ts's mapping instead of rippling through every caller.
+// Normalized shape the rest of the app consumes, decoupled from either
+// upstream provider's field names so per-provider quirks stay local to
+// client.ts instead of rippling through every caller. This also happens to
+// be RapidAPI Real-Time News Data's raw response shape, so its parsing
+// needs no field mapping — only Currents gets translated into it.
 export const NewsArticleSchema = z.object({
   article_id: z.string(),
   title: z.string(),
@@ -34,3 +36,9 @@ export const NewsArticleSchema = z.object({
 })
 
 export type NewsArticle = z.infer<typeof NewsArticleSchema>
+
+export const RapidApiSearchResponseSchema = z.object({
+  status: z.string(),
+  request_id: z.string(),
+  data: z.array(NewsArticleSchema),
+})
