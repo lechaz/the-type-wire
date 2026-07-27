@@ -212,7 +212,6 @@ export const getEvents = createServerFn({ method: "GET" })
       // itself.
       const canonicalMbti = await resolveCanonicalMbti(
         db,
-        region,
         kept
           .filter((t) => t.primary_maker_name && t.mbti)
           .map((t) => ({ name: t.primary_maker_name!, mbti: t.mbti! })),

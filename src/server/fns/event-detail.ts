@@ -90,7 +90,6 @@ export const getEventDetail = createServerFn({ method: "GET" })
     // independent Gemini call to agree with itself.
     const canonicalMbti = await resolveCanonicalMbti(
       db,
-      event.region,
       ingest.decision_makers.map((m) => ({ name: m.name, mbti: m.mbti })),
     )
     if (priorSeed && !canonicalMbti.has(priorSeed.name)) {
