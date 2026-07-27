@@ -10,12 +10,30 @@ export function CategoryTabs({ active, region }: { active: NewsCategory; region:
   const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null)
 
   useLayoutEffect(() => {
-    const el = tabRefs.current[active]
     const container = containerRef.current
-    if (!el || !container) return
-    const elRect = el.getBoundingClientRect()
-    const containerRect = container.getBoundingClientRect()
-    setIndicator({ left: elRect.left - containerRect.left, width: elRect.width })
+    if (!container) return
+    let cancelled = false
+
+    const measure = () => {
+      if (cancelled) return
+      const el = tabRefs.current[active]
+      if (!el) return
+      const elRect = el.getBoundingClientRect()
+      const containerRect = container.getBoundingClientRect()
+      setIndicator({ left: elRect.left - containerRect.left, width: elRect.width })
+    }
+
+    measure()
+
+    // font-mono (Courier Prime) loads async — if the first paint measures
+    // tab widths before it swaps in, the indicator locks onto stale
+    // fallback-font coordinates and never re-checks since this effect only
+    // re-fires on `active` change, not on font load.
+    document.fonts?.ready.then(measure)
+
+    return () => {
+      cancelled = true
+    }
   }, [active])
 
   return (
