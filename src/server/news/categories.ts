@@ -1,9 +1,9 @@
 import type { NewsCategory } from "@/lib/mbti"
 import type { NewsRegion } from "@/lib/region"
 
-// Search query fed to the Real-Time News Data /search endpoint per
-// region+category. TW queries use Chinese terms since the API matches
-// against article text in the article's own language.
+// Search query fed to the Currents API /search endpoint per region+category.
+// TW queries use Chinese terms since the API matches against article text
+// in the article's own language.
 export const CATEGORY_QUERIES: Record<NewsRegion, Record<NewsCategory, string>> = {
   us: {
     ai: "artificial intelligence",

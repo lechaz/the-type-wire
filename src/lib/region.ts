@@ -25,9 +25,8 @@ export const REGION_CONFIG: Record<
   tw: {
     label: "臺灣",
     country: "TW",
-    // NOT "zh-TW" — the Real-Time News Data API 400s with "Country/language
-    // mismatch" on that value. Verified live: zh-Hant + country=TW works.
-    lang: "zh-Hant",
+    // Currents API takes plain ISO 639-1 codes, not BCP47 tags like zh-Hant.
+    lang: "zh",
     locale: "zh-Hant-TW",
     htmlLang: "zh-Hant-TW",
     timeZone: "Asia/Taipei",

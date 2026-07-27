@@ -1,6 +1,26 @@
 import { z } from "zod"
 
-// Verified against a live /search response (2026-07-25) — see plan Phase 1 probe.
+// Currents API /v1/search response shape (currentsapi.services).
+const CurrentsArticleSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  url: z.string(),
+  author: z.string(),
+  image: z.string().nullable(),
+  language: z.string(),
+  category: z.array(z.string()).optional().default([]),
+  published: z.string(),
+})
+
+export const NewsSearchResponseSchema = z.object({
+  status: z.string(),
+  news: z.array(CurrentsArticleSchema),
+})
+
+// Normalized shape the rest of the app consumes, decoupled from the
+// upstream provider's field names so a future provider swap stays local
+// to client.ts's mapping instead of rippling through every caller.
 export const NewsArticleSchema = z.object({
   article_id: z.string(),
   title: z.string(),
@@ -14,9 +34,3 @@ export const NewsArticleSchema = z.object({
 })
 
 export type NewsArticle = z.infer<typeof NewsArticleSchema>
-
-export const NewsSearchResponseSchema = z.object({
-  status: z.string(),
-  request_id: z.string(),
-  data: z.array(NewsArticleSchema),
-})
