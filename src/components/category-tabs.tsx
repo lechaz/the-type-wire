@@ -31,16 +31,23 @@ export function CategoryTabs({ active, region }: { active: NewsCategory; region:
 
     measure()
 
-    // font-mono (Courier Prime) loads async — if the first paint measures
-    // tab widths before it swaps in, the indicator locks onto stale
-    // fallback-font coordinates and never re-checks since this effect only
-    // re-fires on `active` change, not on font load.
+    // font-mono (Courier Prime / Noto Sans TC) loads async — if the first
+    // paint measures tab widths before it swaps in, the indicator locks
+    // onto stale fallback-font coordinates.
     document.fonts?.ready.then(measure)
+
+    // Anything that reflows the tab row (wrap toggling on/off, a sibling
+    // like the Refresh button changing width, viewport resize) has to
+    // trigger a remeasure too — a single measure() at mount/active-change
+    // goes stale the moment layout shifts afterward.
+    const observer = new ResizeObserver(measure)
+    observer.observe(container)
 
     return () => {
       cancelled = true
+      observer.disconnect()
     }
-  }, [active])
+  }, [active, region])
 
   return (
     <nav
