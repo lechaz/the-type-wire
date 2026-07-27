@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils"
 export function CategoryTabs({ active, region }: { active: NewsCategory; region: NewsRegion }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const tabRefs = useRef<Partial<Record<NewsCategory, HTMLAnchorElement | null>>>({})
-  const [indicator, setIndicator] = useState<{ left: number; width: number } | null>(null)
+  const [indicator, setIndicator] = useState<{ left: number; width: number; top: number } | null>(
+    null,
+  )
 
   useLayoutEffect(() => {
     const container = containerRef.current
@@ -20,7 +22,11 @@ export function CategoryTabs({ active, region }: { active: NewsCategory; region:
       if (!el) return
       const elRect = el.getBoundingClientRect()
       const containerRect = container.getBoundingClientRect()
-      setIndicator({ left: elRect.left - containerRect.left, width: elRect.width })
+      setIndicator({
+        left: elRect.left - containerRect.left,
+        width: elRect.width,
+        top: elRect.bottom - containerRect.top,
+      })
     }
 
     measure()
@@ -44,8 +50,8 @@ export function CategoryTabs({ active, region }: { active: NewsCategory; region:
     >
       {indicator && (
         <div
-          className="absolute bottom-0 h-0.5 bg-wire-red transition-[left,width] duration-200 ease-[var(--ease-out-strong)]"
-          style={{ left: indicator.left, width: indicator.width }}
+          className="absolute h-0.5 bg-wire-red transition-[left,width,top] duration-200 ease-[var(--ease-out-strong)]"
+          style={{ left: indicator.left, width: indicator.width, top: indicator.top }}
         />
       )}
       {NEWS_CATEGORIES.map((c) => (

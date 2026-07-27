@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { stringsFor } from "@/lib/i18n"
 import { REGION_CONFIG, monoLabelClass, type NewsRegion } from "@/lib/region"
@@ -32,6 +33,8 @@ export function PredictionTimeline({
   const labelLines = label.split("\n")
   const t = stringsFor(region)
   const locale = REGION_CONFIG[region].locale
+  const [whyOpen, setWhyOpen] = useState(false)
+  const [openNodeId, setOpenNodeId] = useState<string | null>(null)
 
   return (
     <div>
@@ -50,11 +53,12 @@ export function PredictionTimeline({
         <span className="mt-1 font-mono text-[11px] text-muted-foreground">
           {overallConfidence}% {t.confidenceSuffix}
         </span>
-        <Tooltip>
+        <Tooltip open={whyOpen} onOpenChange={setWhyOpen}>
           <TooltipTrigger
             render={
               <button
                 type="button"
+                onClick={() => setWhyOpen((o) => !o)}
                 className="mt-1 font-mono text-[10px] text-muted-foreground underline decoration-dotted underline-offset-2 hover:text-foreground focus-visible:outline-none"
               />
             }
@@ -80,11 +84,16 @@ export function PredictionTimeline({
           aria-hidden
         />
         {nodes.map((n, i) => (
-          <Tooltip key={n.id}>
+          <Tooltip
+            key={n.id}
+            open={openNodeId === n.id}
+            onOpenChange={(open) => setOpenNodeId(open ? n.id : null)}
+          >
             <TooltipTrigger
               render={
                 <button
                   type="button"
+                  onClick={() => setOpenNodeId((id) => (id === n.id ? null : n.id))}
                   className="animate-card-in relative block w-full text-left focus-visible:outline-none"
                 />
               }
