@@ -9,7 +9,7 @@ const ALL_PROVIDERS: NewsProvider[] = ["currents", "rapidapi"]
 // Dev override: set to a single provider to force it (debugging, cost
 // control, isolating a provider-specific bug). Leave null to query both
 // providers and dedupe — that's what gets 3-5+ articles/category reliably.
-const FORCE_PROVIDER: NewsProvider | null = null
+const FORCE_PROVIDER: NewsProvider | null = null //set null to query both providers, set "currents" or "rapidapi" to force one
 
 const CURRENTS_API_BASE = "https://api.currentsapi.services/v1"
 
