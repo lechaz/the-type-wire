@@ -70,7 +70,7 @@ export function MbtiCodex({ region }: { region: NewsRegion }) {
                           {i > 0 && " · "}
                           <span
                             title={`${f.code} · ${ROLE_LABEL[f.role]}: ${f.name}`}
-                            className="cursor-help underline decoration-dotted underline-offset-2"
+                            className="cursor-help whitespace-nowrap underline decoration-dotted underline-offset-2"
                           >
                             {f.code} ({ROLE_ABBR[f.role]})
                           </span>

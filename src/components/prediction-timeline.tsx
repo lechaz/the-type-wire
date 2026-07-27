@@ -107,10 +107,10 @@ export function PredictionTimeline({
                   day: "numeric",
                 })}
               </span>
-              <span className="mt-0.5 block font-display text-sm leading-snug font-bold text-foreground">
+              <span className="mt-0.5 block text-balance font-display text-sm leading-snug font-bold text-foreground">
                 {n.headline}
               </span>
-              <span className="mt-0.5 block font-serif text-xs text-muted-foreground">
+              <span className="mt-0.5 block text-pretty font-serif text-xs text-muted-foreground">
                 {n.summary}
               </span>
             </TooltipTrigger>
