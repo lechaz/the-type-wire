@@ -1,7 +1,7 @@
 import type { NewsRegion } from "./region"
 
 const en = {
-  tagline: "Today's news, fit to type.",
+  tagline: "Current events, fit to type.",
   edition: (n: number) => `Edition No. ${n}`,
   refresh: "Refresh",
   refreshing: "Refreshing…",
@@ -43,7 +43,7 @@ const en = {
 export type Strings = typeof en
 
 const zhHant: Strings = {
-  tagline: "今日新聞，依人格發展。",
+  tagline: "有\"個性\"的新聞。",
   edition: (n) => `第 ${n} 期`,
   refresh: "重新整理",
   refreshing: "重新整理中…",
@@ -67,7 +67,7 @@ const zhHant: Strings = {
   rerunning: "重新推演中…",
   changeAtLeastOne: "至少變更一項",
   runIt: (n) => `執行（已變更 ${n} 項）`,
-  branchFiledToast: "已產生新時間線",
+  branchFiledToast: "已產生新時間軸",
   rerunFailedToast: "重新推演失敗，請稍後再試。",
   legendTrigger: "人格範例 ▲",
   legendTitle: "人格範例",
