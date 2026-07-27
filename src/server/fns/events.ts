@@ -4,6 +4,7 @@ import { getDb } from "@/server/db"
 import { fetchTopArticles } from "@/server/news/client"
 import { generateStructured } from "@/server/gemini/client"
 import { eventTriageJsonSchema, EventTriageResultSchema } from "@/server/gemini/schemas"
+import { resolveCanonicalMbti } from "@/server/gemini/mbti-consistency"
 import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/mbti"
 import { NEWS_REGIONS, REGION_CONFIG, cacheDateFor, type NewsRegion } from "@/lib/region"
 import type { NewsArticle } from "@/server/news/types"
@@ -15,7 +16,30 @@ const GetEventsInput = z.object({
   forceRefresh: z.boolean().optional().default(false),
 })
 
-function triagePrompt(articles: NewsArticle[], region: NewsRegion) {
+// What each desk actually covers, as opposed to what its search query's
+// keywords coincidentally match — e.g. a domestic tourism story that hits a
+// target of "國際旅客" (international visitors) contains the international
+// query's keyword but isn't international/foreign-affairs news at all. The
+// search step can't tell the difference; triage is where a topical read
+// actually happens, so it needs to be told what desk it's curating for.
+const CATEGORY_FIT: Record<NewsCategory, string> = {
+  ai: "Centers on artificial intelligence itself — an AI company, product, " +
+    "policy, or research development — not a story that merely name-drops AI.",
+  finance: "Centers on markets, monetary policy, or corporate finance — not a " +
+    "story that just mentions a dollar figure or company name in passing.",
+  politics: "Centers on domestic governance, elections, or policy-making — not " +
+    "a foreign-affairs story (that's International) and not a human-interest " +
+    "piece that merely involves a politician.",
+  international: "Centers on cross-border affairs — foreign governments, " +
+    "diplomacy, global conflicts, world events. Not a domestic story that " +
+    "merely uses \"international\" as a scale descriptor — e.g. a domestic " +
+    "tourism target, a local event with international guests, a company's " +
+    "\"global\" branding.",
+  technology: "Centers on a tech product, company, research, or industry " +
+    "development — not a story that merely name-drops a tech term.",
+}
+
+function triagePrompt(articles: NewsArticle[], category: NewsCategory, region: NewsRegion) {
   const list = articles
     .map((a, i) => `${i}. "${a.title}" (${a.source_name})${a.snippet ? ` — ${a.snippet}` : ""}`)
     .join("\n")
@@ -24,12 +48,14 @@ function triagePrompt(articles: NewsArticle[], region: NewsRegion) {
     ? [`Write every generated text field (name, role) in ${promptLanguage}.`, ""]
     : []
   return [
-    "Filter this list of news headlines down to stories worth covering. Keep an",
-    "item only if it clears BOTH of these:",
-    "1. A real, named individual is identifiably behind it — a sitting executive,",
+    `This list was pulled by keyword search for the ${category.toUpperCase()} desk, so`,
+    "it will contain stories that only coincidentally match the keyword. Keep an",
+    "item only if it clears ALL of these:",
+    `1. It actually belongs on the ${category.toUpperCase()} desk: ${CATEGORY_FIT[category]}`,
+    "2. A real, named individual is identifiably behind it — a sitting executive,",
     "   founder, official, or other public figure (not an anonymous source, not",
     "   \"analysts say\", not a company as an abstraction with nobody named).",
-    "2. The story is a genuine, consequential decision or move — one that",
+    "3. The story is a genuine, consequential decision or move — one that",
     "   plausibly shapes what happens next for the organization, market, or",
     "   public discourse, and gives real material for a 30-day forecast. The",
     "   individual doesn't need to be world-famous and the outcome doesn't need",
@@ -43,7 +69,7 @@ function triagePrompt(articles: NewsArticle[], region: NewsRegion) {
     "",
     "This list is drawn from a wide pool, so an empty result is a completely",
     "legitimate outcome on a slow news day. Do not keep a weak item just to",
-    "avoid returning an empty list — only keep what genuinely clears both bars.",
+    "avoid returning an empty list — only keep what genuinely clears all three bars.",
     "",
     "For each item you KEEP, name its single primary decision maker or influencer,",
     "their role, and assign an MBTI type with a 0-100 confidence, grounded in",
@@ -110,7 +136,7 @@ export const getEvents = createServerFn({ method: "GET" })
       const kept = articles.length
         ? (
             await generateStructured({
-              prompt: triagePrompt(articles, region),
+              prompt: triagePrompt(articles, category, region),
               schema: eventTriageJsonSchema(region),
               parse: (raw) => EventTriageResultSchema.parse(raw),
             })
@@ -179,16 +205,30 @@ export const getEvents = createServerFn({ method: "GET" })
       // return order is not guaranteed to match input order.
       const triageByUrl = new Map(kept.map((t) => [articles[t.index].link, t]))
 
+      // A person's MBTI should read as a stable personality call, not a
+      // fresh guess every time their name comes up in a new story — reuse
+      // whatever this app already assigned them (see mbti-consistency.ts)
+      // instead of trusting each independent triage call to agree with
+      // itself.
+      const canonicalMbti = await resolveCanonicalMbti(
+        db,
+        region,
+        kept
+          .filter((t) => t.primary_maker_name && t.mbti)
+          .map((t) => ({ name: t.primary_maker_name!, mbti: t.mbti! })),
+      )
+
       const seedRows = (upserted ?? [])
         .filter((event) => !alreadySeeded.has(event.id))
         .map((event) => {
           const t = triageByUrl.get(event.source_url)
           if (!t) return null
+          const name = t.primary_maker_name!.trim()
           return {
             event_id: event.id,
-            name: t.primary_maker_name!,
+            name,
             role: t.primary_maker_role ?? "Key decision maker",
-            mbti: t.mbti!,
+            mbti: canonicalMbti.get(name) ?? t.mbti!,
             reasoning: "Identified as the primary driver of this story.",
             confidence: t.confidence ?? 60,
             sort_order: 0,

@@ -3,6 +3,7 @@ import { z } from "zod"
 import { getDb } from "@/server/db"
 import { generateStructured } from "@/server/gemini/client"
 import { ingestJsonSchema, IngestResultSchema } from "@/server/gemini/schemas"
+import { resolveCanonicalMbti } from "@/server/gemini/mbti-consistency"
 import { REGION_CONFIG, type NewsRegion } from "@/lib/region"
 
 const GetEventDetailInput = z.object({
@@ -54,7 +55,16 @@ export const getEventDetail = createServerFn({ method: "GET" })
     if (existingMakers && existingMakers.length > 1) {
       return { event, decisionMakers: existingMakers }
     }
-    if (existingMakers && existingMakers.length === 1) {
+    // Capture the landing-page seed's type before it's cleared below — its
+    // row is about to be deleted, so it won't show up in the canonical
+    // lookup after Gemini runs, but the primary maker's already-established
+    // type still needs to carry forward into the full roster.
+    const priorSeed =
+      existingMakers && existingMakers.length === 1
+        ? { name: existingMakers[0].name.trim(), mbti: existingMakers[0].mbti }
+        : null
+
+    if (priorSeed) {
       const { error: deleteError } = await db
         .from("decision_makers")
         .delete()
@@ -75,15 +85,30 @@ export const getEventDetail = createServerFn({ method: "GET" })
 
     if (updateError) throw new Error(updateError.message)
 
-    const makerRows = ingest.decision_makers.map((m, i) => ({
-      event_id: event.id,
-      name: m.name,
-      role: m.role,
-      mbti: m.mbti,
-      reasoning: m.reasoning,
-      confidence: m.confidence,
-      sort_order: i,
-    }))
+    // Same reasoning as events.ts's triage step: reuse whatever MBTI this
+    // app already settled on for a given name instead of trusting each
+    // independent Gemini call to agree with itself.
+    const canonicalMbti = await resolveCanonicalMbti(
+      db,
+      event.region,
+      ingest.decision_makers.map((m) => ({ name: m.name, mbti: m.mbti })),
+    )
+    if (priorSeed && !canonicalMbti.has(priorSeed.name)) {
+      canonicalMbti.set(priorSeed.name, priorSeed.mbti)
+    }
+
+    const makerRows = ingest.decision_makers.map((m, i) => {
+      const name = m.name.trim()
+      return {
+        event_id: event.id,
+        name,
+        role: m.role,
+        mbti: canonicalMbti.get(name) ?? m.mbti,
+        reasoning: m.reasoning,
+        confidence: m.confidence,
+        sort_order: i,
+      }
+    })
 
     const { data: insertedMakers, error: insertError } = await db
       .from("decision_makers")
