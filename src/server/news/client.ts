@@ -9,17 +9,29 @@ import type { NewsCategory } from "@/lib/mbti"
 import { REGION_CONFIG, type NewsRegion } from "@/lib/region"
 
 type NewsProvider = "currents" | "rapidapi" | "gdelt"
-// RapidAPI's Real-Time News Data is left wired up (below) but out of the
-// default rotation — its BASIC plan's monthly quota has been running dry.
-// GDELT is free with no key and no monthly quota, so it replaces it as the
-// default second provider; see the "GDELT DOC 2.0" section below.
-const ALL_PROVIDERS: NewsProvider[] = ["currents", "gdelt"]
+// Every provider this app knows how to query, in priority order. Currents
+// and GDELT lead — RapidAPI's Real-Time News Data is left wired up (below)
+// but its BASIC plan's monthly quota has been running dry, so it's last in
+// line and only gets used if MAX_SOURCES is raised to include it.
+const ALL_PROVIDERS: NewsProvider[] = ["currents", "gdelt", "rapidapi"]
 
-// Dev override: set to a single provider to force it (debugging, cost
-// control, isolating a provider-specific bug). Leave null to query the
-// default provider set and dedupe — that's what gets 3-5+ articles/category
-// reliably.
-const FORCE_PROVIDER: NewsProvider | null = null //set null to query default providers, set "currents"/"rapidapi"/"gdelt" to force one
+// Dev knob: how many providers to actually query per fetch, taken in
+// priority order from ALL_PROVIDERS (after EXCLUDE_PROVIDER is removed).
+// Clamped to [2, ALL_PROVIDERS.length] — below 2 there's no dedup/fallback
+// if one provider has a bad day, and above ALL_PROVIDERS.length there's
+// nothing more to add.
+const MAX_SOURCES = 2
+
+// Dev override: set to a provider to drop it from rotation entirely
+// (debugging, cost control, isolating a provider-specific bug) without
+// renumbering MAX_SOURCES. Leave null to use the full priority list as-is.
+const EXCLUDE_PROVIDER: NewsProvider | null = "gdelt" //set "currents"/"rapidapi"/"gdelt" to exclude one, or null
+
+function activeProviders(): NewsProvider[] {
+  const pool = ALL_PROVIDERS.filter((p) => p !== EXCLUDE_PROVIDER)
+  const max = Math.max(2, Math.min(MAX_SOURCES, ALL_PROVIDERS.length))
+  return pool.slice(0, max)
+}
 
 // RapidAPI's Real-Time News Data 400s on the plain "zh" tag region.ts uses
 // for TW — it wants the BCP47 tag zh-Hant specifically. Verified live.
@@ -188,29 +200,46 @@ function cleanGdeltTitle(title: string): string {
     .trim()
 }
 
+// GDELT's DOC API rejects a query outright ("...keyword that was too
+// short") if it contains a bare Latin token under ~4 characters — verified
+// live: "科技 AI" (this app's TW technology query) was rejected over the
+// 2-letter "AI", silently zeroing out that category's GDELT contribution.
+// CJK tokens aren't affected regardless of length (verified: "政治" alone
+// works fine), so this only strips short Latin ones, falling back to the
+// original query untouched if that would empty it out entirely.
+function gdeltSafeQuery(query: string): string {
+  const cjk = /[㐀-鿿]/
+  const terms = query.split(/\s+/).filter((term) => term.length >= 4 || cjk.test(term))
+  return terms.length > 0 ? terms.join(" ") : query
+}
+
 async function searchGdeltOnce(query: string) {
   const url = new URL("https://api.gdeltproject.org/api/v2/doc/doc")
-  url.searchParams.set("query", query)
+  url.searchParams.set("query", gdeltSafeQuery(query))
   url.searchParams.set("mode", "artlist")
   url.searchParams.set("format", "json")
   url.searchParams.set("maxrecords", "50")
   url.searchParams.set("timespan", `${LOOKBACK_DAYS}d`)
 
   const res = await fetch(url, {
-    // GDELT serves a plain-text rate-limit notice — with a 200 status, not
-    // even an error code — to requests that don't look like a real client.
+    // GDELT sometimes serves a plain-text rate-limit notice with a 200
+    // status, not even an error code, to requests that don't look like a
+    // real client.
     headers: {
       "User-Agent": "Mozilla/5.0 (compatible; TheTypeWire/1.0; +https://the-type-wire.vercel.app)",
     },
   })
+  // GDELT signals its rate limit two different ways depending on load: a
+  // genuine 429, or (see above) a 200 with a plain-text notice instead of
+  // JSON. Both are worth the one retry below — only a different non-2xx
+  // status is treated as a real, non-retryable failure.
+  if (res.status === 429) return null
   if (!res.ok) throw new Error(`GDELT request failed: ${res.status}`)
 
   const text = await res.text()
   try {
     return GdeltSearchResponseSchema.parse(JSON.parse(text))
   } catch {
-    // Rate-limit/capacity notices land here (see above) — the only signal
-    // is a JSON-parse failure, since the HTTP status itself is a plain 200.
     return null
   }
 }
@@ -369,7 +398,7 @@ export async function fetchTopArticles(
   region: NewsRegion,
 ): Promise<NewsArticle[]> {
   const query = CATEGORY_QUERIES[region][category]
-  const providers = FORCE_PROVIDER ? [FORCE_PROVIDER] : ALL_PROVIDERS
+  const providers = activeProviders()
 
   const results = await Promise.allSettled(
     providers.map((provider) => fetchFromProvider(provider, query, region)),
