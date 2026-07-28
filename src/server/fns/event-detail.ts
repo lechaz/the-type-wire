@@ -4,6 +4,7 @@ import { getDb } from "@/server/db"
 import { generateStructured } from "@/server/gemini/client"
 import { ingestJsonSchema, IngestResultSchema } from "@/server/gemini/schemas"
 import { resolveCanonicalMbti } from "@/server/gemini/mbti-consistency"
+import { stringsFor } from "@/lib/i18n"
 import { REGION_CONFIG, type NewsRegion } from "@/lib/region"
 
 const GetEventDetailInput = z.object({
@@ -105,14 +106,24 @@ export const getEventDetail = createServerFn({ method: "GET" })
       canonicalMbti.set(priorSeed.name, priorSeed.mbti)
     }
 
+    const t = stringsFor(event.region)
     const makerRows = ingest.decision_makers.map((m, i) => {
       const name = m.name.trim()
+      const canonicalType = canonicalMbti.get(name)
+      // Gemini's reasoning justifies whatever type it assigned THIS call —
+      // if resolveCanonicalMbti overrides that with an already-established
+      // type for this person, keeping the original reasoning would leave
+      // the displayed type and its own justification naming two different
+      // types (observed live: badge showed ENTJ, reasoning argued for
+      // INTJ). Swap in a neutral note instead whenever the override
+      // actually changes anything.
+      const overridden = canonicalType !== undefined && canonicalType !== m.mbti
       return {
         event_id: event.id,
         name,
         role: m.role,
-        mbti: canonicalMbti.get(name) ?? m.mbti,
-        reasoning: m.reasoning,
+        mbti: canonicalType ?? m.mbti,
+        reasoning: overridden ? t.carriedOverReasoning : m.reasoning,
         confidence: m.confidence,
         sort_order: i,
       }
