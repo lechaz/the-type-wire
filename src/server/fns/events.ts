@@ -138,9 +138,14 @@ function triagePrompt(articles: NewsArticle[], category: NewsCategory, region: N
 //
 // The model's character offset is occasionally off by one or two (observed
 // live: cutting mid-tag, e.g. leaving a dangling "- 政" instead of "- 政治"
-// or the full title). Treat it as a hint, not a literal index — search a
-// small window around it for one of the actual chrome separators and cut
-// there instead, so a slightly-wrong offset still lands on a clean boundary.
+// or the full title) — and sometimes just wrong outright, landing well
+// inside real headline content with no chrome anywhere nearby (observed
+// live: "建立標" cut off mid-word from "建立標準形塑生態系", and an English
+// headline truncated mid-clause at "...China chip a"). Treat the offset as
+// a hint, not a literal index: only cut if an actual chrome separator is
+// found within a small window around it. If none is found, the hint isn't
+// trustworthy — return the title untouched rather than slicing blind at a
+// raw index that isn't confirmed to be a real boundary.
 const CHROME_SEPARATORS = [" | ", " - ", "｜", " · "]
 const TRIM_HINT_WINDOW = 6
 
@@ -158,8 +163,9 @@ function applyTitleTrim(title: string, trimAtHint: number | undefined): string {
     const candidate = windowStart + idx
     if (cut === -1 || Math.abs(candidate - trimAtHint) < Math.abs(cut - trimAtHint)) cut = candidate
   }
+  if (cut === -1) return title
 
-  const trimmed = (cut !== -1 ? title.slice(0, cut) : title.slice(0, trimAtHint)).trim()
+  const trimmed = title.slice(0, cut).trim()
   return trimmed.length >= 6 ? trimmed : title
 }
 
