@@ -1,7 +1,7 @@
 import type { NewsRegion } from "./region"
 
 const en = {
-  tagline: "Current events, fit to type.",
+  tagline: "Current events, unfolded by type.",
   edition: (n: number) => `Edition No. ${n}`,
   refresh: "Refresh",
   refreshing: "Refreshing…",
