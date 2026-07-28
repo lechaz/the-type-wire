@@ -158,7 +158,14 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <TooltipProvider delay={300}>
+        {/* timeout={0} disables base-ui's "grouped tooltip" behavior — by
+            default, once one tooltip opens, adjacent ones open instantly
+            for the next 400ms, which strobes when the pointer sweeps
+            quickly across closely-packed triggers (e.g. prediction
+            timeline nodes). Every tooltip open now honors the full delay,
+            so a fast sweep shows nothing instead of flashing through each
+            one; only lingering on a trigger opens its tooltip. */}
+        <TooltipProvider delay={300} closeDelay={100} timeout={0}>
           <RouteProgress />
           <Masthead />
           {children}
