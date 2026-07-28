@@ -201,6 +201,23 @@ async function loadCachedEvents(
   return events.map((e) => ({ ...e, primaryMaker: primaryByEvent.get(e.id) ?? null }))
 }
 
+// Whether to show the "no new dispatches" note. Events are ordered
+// cache_date desc, so the first row is the most recent edition on file —
+// comparing that against today's cache_date reflects actual data
+// freshness, not which code path happened to produce this response. Using
+// the response shape (e.g. "this came from the no-fresh-fetch fallback
+// branch") instead of the data itself was the original bug: a category
+// that already had today's edition seeded by an earlier refresh, then hit
+// this same fallback branch on a later check that found nothing
+// additional, would wrongly flag its own today-dated content as stale.
+function freshnessStatus(
+  events: { cache_date: string }[],
+  todayCacheDate: string,
+): "ok" | "no_new" {
+  if (events.length === 0) return "ok"
+  return events[0].cache_date === todayCacheDate ? "ok" : "no_new"
+}
+
 export const getEvents = createServerFn({ method: "GET" })
   .validator(GetEventsInput)
   .handler(async ({ data }) => {
@@ -210,7 +227,7 @@ export const getEvents = createServerFn({ method: "GET" })
 
     if (!forceRefresh) {
       const cached = await loadCachedEvents(db, category, region, cacheDate)
-      if (cached.length > 0) return { events: cached, status: "ok" as const }
+      if (cached.length > 0) return { events: cached, status: freshnessStatus(cached, cacheDate) }
     }
 
     try {
@@ -234,7 +251,7 @@ export const getEvents = createServerFn({ method: "GET" })
       // where cached articles used to be.
       if (kept.length === 0) {
         const fallback = await loadCachedEvents(db, category, region)
-        return { events: fallback, status: "no_new" as const }
+        return { events: fallback, status: freshnessStatus(fallback, cacheDate) }
       }
 
       if (forceRefresh) {
