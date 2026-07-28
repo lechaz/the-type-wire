@@ -75,7 +75,12 @@ export function MbtiCodex({ region }: { region: NewsRegion }) {
                             {i > 0 && " · "}
                             <Tooltip
                               open={openKey === key}
-                              onOpenChange={(open) => setOpenKey(open ? key : null)}
+                              onOpenChange={(open) =>
+                                // See prediction-timeline.tsx's identical guard: a
+                                // stale close from the previously-hovered item can
+                                // arrive after this one's open and must not clobber it.
+                                setOpenKey((current) => (open ? key : current === key ? null : current))
+                              }
                             >
                               <TooltipTrigger
                                 render={

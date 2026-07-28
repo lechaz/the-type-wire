@@ -87,7 +87,15 @@ export function PredictionTimeline({
           <Tooltip
             key={n.id}
             open={openNodeId === n.id}
-            onOpenChange={(open) => setOpenNodeId(open ? n.id : null)}
+            onOpenChange={(open) =>
+              // A node's own close event can arrive after the next node's
+              // open event (base-ui schedules the close on a delay timer,
+              // so hovering B before A's timer fires races them) — only
+              // clear the shared id if it's still this node's turn to,
+              // otherwise a stale close from A would blank out B's tooltip
+              // right after it opens.
+              setOpenNodeId((current) => (open ? n.id : current === n.id ? null : current))
+            }
           >
             <TooltipTrigger
               render={

@@ -8,6 +8,7 @@ import { WhatIfPanel } from "@/components/what-if-panel"
 import { CATEGORY_LABELS } from "@/lib/mbti"
 import { monoLabelClass, type NewsRegion } from "@/lib/region"
 import { stringsFor } from "@/lib/i18n"
+import { buildMetaTags } from "@/lib/site-meta"
 import { cn } from "@/lib/utils"
 
 const DEFAULT_BRANCH_COLOR = "#c21725"
@@ -28,6 +29,17 @@ export const Route = createFileRoute("/event/$eventId/")({
     const prediction = await getPrediction({ data: { eventId: params.eventId } })
     return { detail, prediction }
   },
+  // Defined on this route (not aggregated at root) so it's tied to this
+  // route's own loaderData — the framework re-runs a route's head() when
+  // that same route's loader resolves, which is what makes the <title>
+  // actually update on client-side navigation instead of staying frozen on
+  // the previous page's until a hard refresh.
+  head: (ctx) => ({
+    meta: buildMetaTags({
+      pageTitle: ctx.loaderData?.detail.event.headline ?? null,
+      description: ctx.loaderData?.detail.event.summary ?? "",
+    }),
+  }),
   notFoundComponent: EventNotFound,
   component: EventPage,
 })
