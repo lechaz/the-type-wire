@@ -55,6 +55,17 @@ export function eventTriageJsonSchema(region: NewsRegion) {
             primary_maker_role: { type: "string", description: `Their role in this story.${lang}` },
             mbti: { type: "string", enum: MBTI_TYPES as unknown as string[] },
             confidence: { type: "integer", minimum: 0, maximum: 100, description: CONFIDENCE_RUBRIC },
+            title_trim_at: {
+              type: "integer",
+              description:
+                "Character count to keep from the START of this item's title, dropping " +
+                "ONLY trailing site chrome scraped along with it — a site/section name " +
+                "suffix like \" | Section | Site Name\" or \" - Category\". Set this to the " +
+                "title's full character length (i.e. no trim) unless it clearly has such " +
+                "chrome tacked on. This is a cut point, not a rewrite: never reword, " +
+                "translate, or paraphrase any part of the title, and never trim real " +
+                "headline content, only the trailing chrome.",
+            },
           },
           required: ["index", "keep"],
         },
@@ -73,6 +84,7 @@ export const EventTriageResultSchema = z.object({
       primary_maker_role: z.string().optional(),
       mbti: z.enum(MBTI_TYPES).optional(),
       confidence: z.number().int().min(0).max(100).optional(),
+      title_trim_at: z.number().int().optional(),
     }),
   ),
 })

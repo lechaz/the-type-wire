@@ -22,7 +22,7 @@ const en = {
   confidenceSuffix: "confidence",
   why: "why?",
   whatIf: "What if…",
-  swapAny: "Swap any number of personalities",
+  isConnector: "is…",
   reset: "Reset",
   rerunning: "Rerunning…",
   changeAtLeastOne: "Change at least one",
@@ -45,7 +45,7 @@ const en = {
 export type Strings = typeof en
 
 const zhHant: Strings = {
-  tagline: "有\"個性\"的新聞。",
+  tagline: "有個性的偽新聞。",
   edition: (n) => `第 ${n} 期`,
   refresh: "重新整理",
   refreshing: "重新整理中…",
@@ -57,7 +57,7 @@ const zhHant: Strings = {
   emptyDescription: "通訊社今天尚未在此版發稿。",
   unavailableTitle: (label) => `${label}版暫時離線`,
   unavailableDescription: "通訊社訊號目前中斷，請稍後再試。",
-  desk: "版",
+  desk: "",
   backToWire: "← 返回通訊社",
   byline: "副標：主要人物",
   forecastHeading: "30 天推演",
@@ -66,7 +66,7 @@ const zhHant: Strings = {
   confidenceSuffix: "信心度",
   why: "解析",
   whatIf: "假如…",
-  swapAny: "可任意更換多位人物的人格",
+  isConnector: "是…",
   reset: "重設",
   rerunning: "重新推演中…",
   changeAtLeastOne: "至少變更一項",

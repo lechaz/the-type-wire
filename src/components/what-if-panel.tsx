@@ -66,13 +66,12 @@ export function WhatIfPanel({
         {t.whatIf}
       </PopoverTrigger>
       <PopoverContent className="rounded-none">
-        <p className={cn("mb-2 font-mono text-[10px] text-muted-foreground", monoLabelClass(region))}>
-          {t.swapAny}
-        </p>
         <div className="flex flex-col gap-2">
           {makers.map((m) => (
             <label key={m.id} className="flex items-center justify-between gap-2">
-              <span className="min-w-0 truncate font-serif text-xs text-foreground">{m.name}</span>
+              <span className="min-w-0 truncate font-serif text-xs text-foreground">
+                {m.name} {t.isConnector}
+              </span>
               <select
                 value={selected[m.id]}
                 onChange={(e) =>

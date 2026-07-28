@@ -104,9 +104,49 @@ function triagePrompt(articles: NewsArticle[], category: NewsCategory, region: N
     "their role, and assign an MBTI type with a 0-100 confidence, grounded in",
     "their real public behavior.",
     "",
+    "Some titles below were scraped straight from a page's raw <title> tag and carry",
+    "trailing site chrome (a site/section name tacked on with \" | \" or \" - \"). Set",
+    "title_trim_at to cut that off — a character count from the start of the title,",
+    "not replacement text. This can only shorten the title, never reword any part of",
+    "it; set it to the title's full length when there's no chrome to drop.",
+    "",
     ...languageLine,
     list,
   ].join("\n")
+}
+
+// Trims trailing site chrome (e.g. GDELT's raw scraped <title> tags carrying
+// " | Section | Site Name") off a headline using the triage LLM's own
+// judgment of where the real title ends — but only ever as a cut point.
+// Slicing the original string can shorten it, never reword, translate, or
+// otherwise alter it, so this stays a mechanical trim even though the
+// boundary itself came from the model.
+//
+// The model's character offset is occasionally off by one or two (observed
+// live: cutting mid-tag, e.g. leaving a dangling "- 政" instead of "- 政治"
+// or the full title). Treat it as a hint, not a literal index — search a
+// small window around it for one of the actual chrome separators and cut
+// there instead, so a slightly-wrong offset still lands on a clean boundary.
+const CHROME_SEPARATORS = [" | ", " - ", "｜", " · "]
+const TRIM_HINT_WINDOW = 6
+
+function applyTitleTrim(title: string, trimAtHint: number | undefined): string {
+  if (!trimAtHint || trimAtHint <= 0 || trimAtHint >= title.length) return title
+
+  const windowStart = Math.max(0, trimAtHint - TRIM_HINT_WINDOW)
+  const windowEnd = Math.min(title.length, trimAtHint + TRIM_HINT_WINDOW)
+  const window = title.slice(windowStart, windowEnd)
+
+  let cut = -1
+  for (const sep of CHROME_SEPARATORS) {
+    const idx = window.indexOf(sep)
+    if (idx === -1) continue
+    const candidate = windowStart + idx
+    if (cut === -1 || Math.abs(candidate - trimAtHint) < Math.abs(cut - trimAtHint)) cut = candidate
+  }
+
+  const trimmed = (cut !== -1 ? title.slice(0, cut) : title.slice(0, trimAtHint)).trim()
+  return trimmed.length >= 6 ? trimmed : title
 }
 
 async function loadCachedEvents(
@@ -213,7 +253,7 @@ export const getEvents = createServerFn({ method: "GET" })
         return {
           category,
           region,
-          headline: a.title,
+          headline: applyTitleTrim(a.title, t.title_trim_at),
           source_name: a.source_name,
           source_url: a.link,
           published_at: a.published_datetime_utc,

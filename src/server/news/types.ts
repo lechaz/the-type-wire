@@ -42,3 +42,21 @@ export const RapidApiSearchResponseSchema = z.object({
   request_id: z.string(),
   data: z.array(NewsArticleSchema),
 })
+
+// GDELT DOC 2.0 /doc endpoint response shape (api.gdeltproject.org),
+// verified against a live request — no official field-level schema is
+// published. sourcecountry/language come back as English words (e.g.
+// "Taiwan", "Chinese"), not this app's ISO codes.
+const GdeltArticleSchema = z.object({
+  url: z.string(),
+  title: z.string(),
+  seendate: z.string(),
+  socialimage: z.string().optional(),
+  domain: z.string(),
+  language: z.string().optional().default(""),
+  sourcecountry: z.string().optional().default(""),
+})
+
+export const GdeltSearchResponseSchema = z.object({
+  articles: z.array(GdeltArticleSchema).optional().default([]),
+})

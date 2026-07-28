@@ -1,15 +1,25 @@
 import { CATEGORY_QUERIES } from "./categories"
-import { NewsSearchResponseSchema, RapidApiSearchResponseSchema, type NewsArticle } from "./types"
+import {
+  NewsSearchResponseSchema,
+  RapidApiSearchResponseSchema,
+  GdeltSearchResponseSchema,
+  type NewsArticle,
+} from "./types"
 import type { NewsCategory } from "@/lib/mbti"
 import { REGION_CONFIG, type NewsRegion } from "@/lib/region"
 
-type NewsProvider = "currents" | "rapidapi"
-const ALL_PROVIDERS: NewsProvider[] = ["currents", "rapidapi"]
+type NewsProvider = "currents" | "rapidapi" | "gdelt"
+// RapidAPI's Real-Time News Data is left wired up (below) but out of the
+// default rotation — its BASIC plan's monthly quota has been running dry.
+// GDELT is free with no key and no monthly quota, so it replaces it as the
+// default second provider; see the "GDELT DOC 2.0" section below.
+const ALL_PROVIDERS: NewsProvider[] = ["currents", "gdelt"]
 
 // Dev override: set to a single provider to force it (debugging, cost
-// control, isolating a provider-specific bug). Leave null to query both
-// providers and dedupe — that's what gets 3-5+ articles/category reliably.
-const FORCE_PROVIDER: NewsProvider | null = null //set null to query both providers, set "currents" or "rapidapi" to force one
+// control, isolating a provider-specific bug). Leave null to query the
+// default provider set and dedupe — that's what gets 3-5+ articles/category
+// reliably.
+const FORCE_PROVIDER: NewsProvider | null = null //set null to query default providers, set "currents"/"rapidapi"/"gdelt" to force one
 
 // RapidAPI's Real-Time News Data 400s on the plain "zh" tag region.ts uses
 // for TW — it wants the BCP47 tag zh-Hant specifically. Verified live.
@@ -137,8 +147,107 @@ async function searchRapidApi(query: string, region: NewsRegion): Promise<NewsAr
   return parsed.data
 }
 
+// GDELT DOC 2.0 (api.gdeltproject.org) — free, no API key, no monthly quota.
+// Rate-limited to protect their infra; their own notice says "one every 5
+// seconds" but that's been unreliable in practice, so this waits longer.
+const GDELT_MIN_INTERVAL_MS = 6000
+let gdeltLastCallAt = 0
+
+async function throttleGdelt() {
+  const wait = gdeltLastCallAt + GDELT_MIN_INTERVAL_MS - Date.now()
+  if (wait > 0) await new Promise((r) => setTimeout(r, wait))
+  gdeltLastCallAt = Date.now()
+}
+
+// GDELT tags each article with the English name of its outlet's country and
+// its source language (e.g. "Taiwan", "Chinese") — not this app's ISO
+// codes, and not something worth passing as a query operator: GDELT's query
+// parser is documented as unreliable with compound boolean expressions, so
+// this filters the plain-keyword search results client-side instead, the
+// same defensive approach isOnTopic() already takes for topical relevance.
+const GDELT_EXPECTED_COUNTRY: Record<NewsRegion, string> = { us: "United States", tw: "Taiwan" }
+const GDELT_EXPECTED_LANGUAGE: Record<NewsRegion, string> = { us: "English", tw: "Chinese" }
+
+// "20260726T143000Z" -> "2026-07-26T14:30:00Z"
+function parseGdeltDate(seendate: string): string {
+  const iso = `${seendate.slice(0, 4)}-${seendate.slice(4, 6)}-${seendate.slice(6, 8)}` +
+    `T${seendate.slice(9, 11)}:${seendate.slice(11, 13)}:${seendate.slice(13, 15)}Z`
+  return new Date(iso).toISOString()
+}
+
+// GDELT titles are pulled straight from each page's raw <title> tag, not a
+// clean headline field — outlets append a trailing "| Section | Site Name"
+// chain, and CJK titles come back with stray spaces around brackets that
+// real Chinese typography doesn't have. Both are safe, mechanical cleanups;
+// anything messier (mixed separators, embedded ads) is left alone rather
+// than guessed at.
+function cleanGdeltTitle(title: string): string {
+  return title
+    .replace(/\s*(\|[^|]+){1,3}$/, "")
+    .replace(/\s*([「」『』（）()：:])\s*/g, "$1")
+    .trim()
+}
+
+async function searchGdeltOnce(query: string) {
+  const url = new URL("https://api.gdeltproject.org/api/v2/doc/doc")
+  url.searchParams.set("query", query)
+  url.searchParams.set("mode", "artlist")
+  url.searchParams.set("format", "json")
+  url.searchParams.set("maxrecords", "50")
+  url.searchParams.set("timespan", `${LOOKBACK_DAYS}d`)
+
+  const res = await fetch(url, {
+    // GDELT serves a plain-text rate-limit notice — with a 200 status, not
+    // even an error code — to requests that don't look like a real client.
+    headers: {
+      "User-Agent": "Mozilla/5.0 (compatible; TheTypeWire/1.0; +https://the-type-wire.vercel.app)",
+    },
+  })
+  if (!res.ok) throw new Error(`GDELT request failed: ${res.status}`)
+
+  const text = await res.text()
+  try {
+    return GdeltSearchResponseSchema.parse(JSON.parse(text))
+  } catch {
+    // Rate-limit/capacity notices land here (see above) — the only signal
+    // is a JSON-parse failure, since the HTTP status itself is a plain 200.
+    return null
+  }
+}
+
+async function searchGdelt(query: string, region: NewsRegion): Promise<NewsArticle[]> {
+  await throttleGdelt()
+  let parsed = await searchGdeltOnce(query)
+
+  if (!parsed) {
+    await new Promise((r) => setTimeout(r, GDELT_MIN_INTERVAL_MS))
+    gdeltLastCallAt = Date.now()
+    parsed = await searchGdeltOnce(query)
+  }
+  if (!parsed) throw new Error("GDELT request failed: rate-limited after retry")
+
+  const expectedCountry = GDELT_EXPECTED_COUNTRY[region]
+  const expectedLanguage = GDELT_EXPECTED_LANGUAGE[region]
+
+  return parsed.articles
+    .filter((a) => a.sourcecountry === expectedCountry && a.language === expectedLanguage)
+    .map((a) => ({
+      article_id: a.url,
+      title: cleanGdeltTitle(a.title),
+      link: a.url,
+      snippet: null,
+      photo_url: a.socialimage && a.socialimage !== "" ? a.socialimage : null,
+      published_datetime_utc: parseGdeltDate(a.seendate),
+      authors: [],
+      source_url: a.url,
+      source_name: a.domain.replace(/^www\./, ""),
+    }))
+}
+
 function fetchFromProvider(provider: NewsProvider, query: string, region: NewsRegion) {
-  return provider === "currents" ? searchCurrents(query, region) : searchRapidApi(query, region)
+  if (provider === "currents") return searchCurrents(query, region)
+  if (provider === "gdelt") return searchGdelt(query, region)
+  return searchRapidApi(query, region)
 }
 
 function normalizeTitle(title: string): string {
