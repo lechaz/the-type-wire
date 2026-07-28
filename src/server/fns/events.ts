@@ -43,33 +43,62 @@ function triagePrompt(articles: NewsArticle[], category: NewsCategory, region: N
   const list = articles
     .map((a, i) => `${i}. "${a.title}" (${a.source_name})${a.snippet ? ` — ${a.snippet}` : ""}`)
     .join("\n")
-  const { promptLanguage } = REGION_CONFIG[region]
+  const { promptLanguage, label: editionLabel } = REGION_CONFIG[region]
   const languageLine = promptLanguage
     ? [`Write every generated text field (name, role) in ${promptLanguage}.`, ""]
     : []
+
+  const criteria = [
+    `It actually belongs on the ${category.toUpperCase()} desk: ${CATEGORY_FIT[category]}`,
+    "A real, named individual is identifiably behind it — a sitting executive, " +
+      "founder, official, or other public figure (not an anonymous source, not " +
+      '"analysts say", not a company as an abstraction with nobody named).',
+    "The story is a genuine, consequential decision or move — one that " +
+      "plausibly shapes what happens next for the organization, market, or " +
+      "public discourse, and gives real material for a 30-day forecast. The " +
+      "individual doesn't need to be world-famous and the outcome doesn't need " +
+      "to be historic, but it does need real stakes: a strategic pivot, a policy " +
+      "move, a contested decision, a shakeup, a high-stakes bet.",
+  ]
+  // This edition's outlets routinely carry wire-service pickups of foreign
+  // news (AFP/Reuters stories translated or republished verbatim) — those
+  // aren't this edition's own reporting and don't belong on a desk that
+  // isn't International, even though the outlet running them is local.
+  // Skip this bar for the International desk itself, where foreign-affairs
+  // coverage is exactly the point.
+  if (category !== "international") {
+    criteria.push(
+      `It's substantively about ${editionLabel} — not a wire-service pickup of ` +
+        `foreign news that a ${editionLabel} outlet merely carried or translated ` +
+        "(that belongs on the International desk, not here).",
+    )
+  }
+
   return [
-    `This list was pulled by keyword search for the ${category.toUpperCase()} desk, so`,
-    "it will contain stories that only coincidentally match the keyword. Keep an",
-    "item only if it clears ALL of these:",
-    `1. It actually belongs on the ${category.toUpperCase()} desk: ${CATEGORY_FIT[category]}`,
-    "2. A real, named individual is identifiably behind it — a sitting executive,",
-    "   founder, official, or other public figure (not an anonymous source, not",
-    "   \"analysts say\", not a company as an abstraction with nobody named).",
-    "3. The story is a genuine, consequential decision or move — one that",
-    "   plausibly shapes what happens next for the organization, market, or",
-    "   public discourse, and gives real material for a 30-day forecast. The",
-    "   individual doesn't need to be world-famous and the outcome doesn't need",
-    "   to be historic, but it does need real stakes: a strategic pivot, a policy",
-    "   move, a contested decision, a shakeup, a high-stakes bet.",
+    `This is the ${editionLabel} edition. This list was pulled by keyword search`,
+    `for the ${category.toUpperCase()} desk, so it will contain stories that only`,
+    "coincidentally match the keyword. Keep an item only if it clears ALL of these:",
+    ...criteria.map((c, i) => `${i + 1}. ${c}`),
     "",
     "Reject: routine statements or interviews with no real decision in them,",
     "minor personnel notes, generic \"X talks about Y\" coverage, opinion pieces,",
     "investment-tip listicles, roundups, and how-to content — even if a named",
     "individual is technically mentioned.",
     "",
+    "Illustrative examples (not from the actual list below, just calibrating the bar):",
+    '- KEEP: "Central bank chief cuts rates in surprise break with board consensus"',
+    "  — a named official making a real, consequential call.",
+    '- REJECT: "Central bank chief says economy remains strong in year-end interview"',
+    "  — same kind of figure, but no actual decision, just a routine remark.",
+    '- REJECT: "World leaders react to earthquake abroad" run by a local outlet under a',
+    "  wire byline — a real event, but it's foreign news passing through a local outlet,",
+    "  not this edition's own story.",
+    '- KEEP: "Mayor abruptly fires police chief after leaked memo surfaces"',
+    "  — genuinely local, genuinely consequential, a named figure at the center.",
+    "",
     "This list is drawn from a wide pool, so an empty result is a completely",
     "legitimate outcome on a slow news day. Do not keep a weak item just to",
-    "avoid returning an empty list — only keep what genuinely clears all three bars.",
+    "avoid returning an empty list — only keep what genuinely clears every bar above.",
     "",
     "For each item you KEEP, name its single primary decision maker or influencer,",
     "their role, and assign an MBTI type with a 0-100 confidence, grounded in",
