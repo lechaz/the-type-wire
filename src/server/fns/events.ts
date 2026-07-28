@@ -16,6 +16,20 @@ const GetEventsInput = z.object({
   forceRefresh: z.boolean().optional().default(false),
 })
 
+// A single status instead of separate unavailable/noNewUpdates booleans —
+// those could disagree with each other (e.g. a genuine live-fetch failure
+// with an existing older cache set unavailable:false and noNewUpdates:false,
+// so it looked identical to a normal successful load; the refresh toast
+// couldn't tell "nothing changed" from "the fetch actually failed" either).
+// "ok": fresh cache hit, or a live fetch/triage that kept something new.
+// "no_new": a live check ran with no error, but had nothing new to add —
+//   cached content (today's or an older fallback) is shown as-is.
+// "degraded": the live fetch/triage genuinely threw; cached content (if
+//   any) is shown as a fallback. Combined with an empty events array, "ok"
+//   and "no_new" both mean a legitimately quiet desk; "degraded" means the
+//   feed itself is down.
+export type EventsStatus = "ok" | "no_new" | "degraded"
+
 // What each desk actually covers, as opposed to what its search query's
 // keywords coincidentally match — e.g. a domestic tourism story that hits a
 // target of "國際旅客" (international visitors) contains the international
@@ -196,7 +210,7 @@ export const getEvents = createServerFn({ method: "GET" })
 
     if (!forceRefresh) {
       const cached = await loadCachedEvents(db, category, region, cacheDate)
-      if (cached.length > 0) return { events: cached, unavailable: false, noNewUpdates: false }
+      if (cached.length > 0) return { events: cached, status: "ok" as const }
     }
 
     try {
@@ -220,7 +234,7 @@ export const getEvents = createServerFn({ method: "GET" })
       // where cached articles used to be.
       if (kept.length === 0) {
         const fallback = await loadCachedEvents(db, category, region)
-        return { events: fallback, unavailable: false, noNewUpdates: fallback.length > 0 }
+        return { events: fallback, status: "no_new" as const }
       }
 
       if (forceRefresh) {
@@ -317,8 +331,7 @@ export const getEvents = createServerFn({ method: "GET" })
 
       return {
         events: await loadCachedEvents(db, category, region, cacheDate),
-        unavailable: false,
-        noNewUpdates: false,
+        status: "ok" as const,
       }
     } catch (err) {
       // News API or Gemini quota/rate-limit hit (or any other live-fetch
@@ -330,6 +343,6 @@ export const getEvents = createServerFn({ method: "GET" })
       // throwing a raw error to the page — there's simply nothing to show.
       console.error(`[getEvents] live fetch failed for ${category}/${region}, serving cache:`, err)
       const fallback = await loadCachedEvents(db, category, region)
-      return { events: fallback, unavailable: fallback.length === 0, noNewUpdates: false }
+      return { events: fallback, status: "degraded" as const }
     }
   })

@@ -25,7 +25,7 @@ export const Route = createFileRoute("/")({
 
 function Home() {
   const { category, region } = Route.useSearch()
-  const { events, unavailable, noNewUpdates } = Route.useLoaderData()
+  const { events, status } = Route.useLoaderData()
   const router = useRouter()
   const [refreshing, setRefreshing] = useState(false)
   const t = stringsFor(region)
@@ -36,7 +36,11 @@ function Home() {
     try {
       const result = await getEvents({ data: { category, region, forceRefresh: true } })
       await router.invalidate()
-      toast.success(result.noNewUpdates ? t.noNewUpdatesToast(label) : t.refreshedToast(label))
+      if (result.status === "degraded") {
+        toast.error(t.refreshFailedToast)
+      } else {
+        toast.success(result.status === "no_new" ? t.noNewUpdatesToast(label) : t.refreshedToast(label))
+      }
     } catch {
       toast.error(t.refreshFailedToast)
     } finally {
@@ -60,16 +64,18 @@ function Home() {
           {label} dispatches
         </h2>
 
-        {noNewUpdates && events.length > 0 && (
-          <p className="mb-4 font-mono text-[11px] text-muted-foreground">{t.noNewUpdatesNote}</p>
+        {events.length > 0 && status !== "ok" && (
+          <p className="mb-4 font-mono text-[11px] text-muted-foreground">
+            {status === "degraded" ? t.liveFeedDownNote : t.noNewUpdatesNote}
+          </p>
         )}
 
         {events.length === 0 && (
           <Empty className="border">
             <EmptyHeader>
-              <EmptyTitle>{unavailable ? t.unavailableTitle(label) : t.emptyTitle(label)}</EmptyTitle>
+              <EmptyTitle>{status === "degraded" ? t.unavailableTitle(label) : t.emptyTitle(label)}</EmptyTitle>
               <EmptyDescription>
-                {unavailable ? t.unavailableDescription : t.emptyDescription}
+                {status === "degraded" ? t.unavailableDescription : t.emptyDescription}
               </EmptyDescription>
             </EmptyHeader>
             <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
