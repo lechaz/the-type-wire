@@ -10,6 +10,15 @@ const GetEventDetailInput = z.object({
   eventId: z.string().uuid(),
 })
 
+// A distinct sentinel message rather than a custom Error subclass — thrown
+// errors cross the server-function RPC boundary as plain Errors, so
+// `instanceof` on a subclass wouldn't survive on the client; the message
+// string does. Lets the route loader tell "this event was pruned from the
+// cache" (e.g. a later refresh's re-triage dropped it, cascade-deleting its
+// row) apart from a genuine failure, and show a real not-found page instead
+// of a raw error crash.
+export const EVENT_NOT_FOUND = "EVENT_NOT_FOUND"
+
 function ingestPrompt(headline: string, sourceName: string, snippet: string, region: NewsRegion) {
   const { promptLanguage } = REGION_CONFIG[region]
   return [
@@ -40,7 +49,7 @@ export const getEventDetail = createServerFn({ method: "GET" })
       .eq("id", data.eventId)
       .single()
 
-    if (eventError || !event) throw new Error(eventError?.message ?? "Event not found")
+    if (eventError || !event) throw new Error(EVENT_NOT_FOUND)
 
     const { data: existingMakers, error: makersError } = await db
       .from("decision_makers")

@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link, notFound } from "@tanstack/react-router"
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react"
-import { getEventDetail } from "@/server/fns/event-detail"
+import { getEventDetail, EVENT_NOT_FOUND } from "@/server/fns/event-detail"
 import { getPrediction, runScenario } from "@/server/fns/prediction"
 import { DecisionMakerCard } from "@/components/decision-maker-card"
 import { PredictionTimeline } from "@/components/prediction-timeline"
@@ -14,12 +14,47 @@ const DEFAULT_BRANCH_COLOR = "#c21725"
 
 export const Route = createFileRoute("/event/$eventId/")({
   loader: async ({ params }) => {
-    const detail = await getEventDetail({ data: { eventId: params.eventId } })
+    let detail: Awaited<ReturnType<typeof getEventDetail>>
+    try {
+      detail = await getEventDetail({ data: { eventId: params.eventId } })
+    } catch (err) {
+      // A later refresh's re-triage can legitimately drop a story that used
+      // to be on the wire, cascade-deleting its row — someone sitting on
+      // this event's detail page hits a dead id on their next reload. Route
+      // that to the not-found page instead of an unhandled loader crash.
+      if (err instanceof Error && err.message === EVENT_NOT_FOUND) throw notFound()
+      throw err
+    }
     const prediction = await getPrediction({ data: { eventId: params.eventId } })
     return { detail, prediction }
   },
+  notFoundComponent: EventNotFound,
   component: EventPage,
 })
+
+function EventNotFound() {
+  return (
+    <main className="mx-auto max-w-5xl px-6 pt-8 pb-14 text-center">
+      <p className="font-mono text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
+        Story no longer on file
+      </p>
+      <h1 className="mt-2 font-display text-2xl font-bold text-foreground">
+        This dispatch has been pulled from the wire
+      </h1>
+      <p className="mx-auto mt-2 max-w-[50ch] font-serif text-sm text-muted-foreground">
+        A later edition dropped it from today's coverage. It may still turn up in a future
+        refresh, or it may be gone for good.
+      </p>
+      <Link
+        to="/"
+        search={{ category: "ai", region: "us" }}
+        className="mt-4 inline-block font-mono text-xs font-bold text-foreground underline underline-offset-4 hover:text-wire-red"
+      >
+        ← Back to the wire
+      </Link>
+    </main>
+  )
+}
 
 type ScenarioResult = Awaited<ReturnType<typeof runScenario>>
 
