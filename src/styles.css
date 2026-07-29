@@ -142,6 +142,7 @@ round covering visual world, nav structure, and naming. See DESIGN.md.
     }
   html {
     @apply font-sans;
+    scrollbar-gutter: stable;
     }
   h1, h2, h3, h4 {
     @apply font-display;

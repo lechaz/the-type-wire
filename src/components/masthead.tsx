@@ -66,20 +66,24 @@ export function Masthead() {
           ))}
         </div>
       </header>
-      {eventRoute && (
-        <div className="flex justify-start px-6 pt-2">
-          <Link
-            to="/"
-            search={{ category: eventRoute.category, region }}
-            className={cn(
-              "inline-flex items-center gap-1.5 font-mono text-xs font-bold text-foreground underline underline-offset-4 hover:text-wire-red",
-              monoLabelClass(region),
-            )}
-          >
-            {t.backToWire}
-          </Link>
-        </div>
-      )}
+      {/* Always rendered (visibility toggled, not presence) so this row's
+          height is reserved on every route — otherwise the page content
+          below jumps up/down as you navigate between the event page and
+          everywhere else. */}
+      <div className={cn("flex justify-start px-6 pt-6", !eventRoute && "invisible")}>
+        <Link
+          to="/"
+          search={{ category: eventRoute?.category ?? "ai", region }}
+          tabIndex={eventRoute ? 0 : -1}
+          aria-hidden={!eventRoute}
+          className={cn(
+            "inline-flex items-center gap-1.5 font-mono text-xs font-bold text-foreground underline underline-offset-4 hover:text-wire-red",
+            monoLabelClass(region),
+          )}
+        >
+          {t.backToWire}
+        </Link>
+      </div>
     </>
   )
 }
