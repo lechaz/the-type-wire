@@ -93,6 +93,16 @@ function EventPage() {
     return () => ro.disconnect()
   }, [branches.length])
 
+  useEffect(() => {
+    // Desktop already shows enough branches at once that a new one lands
+    // in view without help. Below the `sm` breakpoint the row shows one
+    // card at a time, so a newly run what-if would otherwise append off
+    // to the right, invisible until the reader thinks to swipe.
+    if (branches.length === 0 || window.innerWidth >= 640) return
+    const last = scrollRef.current?.lastElementChild as HTMLElement | null | undefined
+    last?.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" })
+  }, [branches.length])
+
   function handleScrollPointerDown(e: ReactPointerEvent<HTMLDivElement>) {
     const el = scrollRef.current
     if (!el || e.button !== 0 || !overflowing) return
