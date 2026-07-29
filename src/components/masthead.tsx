@@ -25,20 +25,6 @@ export function Masthead() {
 
   return (
     <header className="border-b border-border px-6 pt-8 pb-3 text-center">
-      {eventRoute && (
-        <div className="mb-2 flex justify-start">
-          <Link
-            to="/"
-            search={{ category: eventRoute.category, region }}
-            className={cn(
-              "inline-flex items-center gap-1.5 font-mono text-xs font-bold text-foreground underline underline-offset-4 hover:text-wire-red",
-              monoLabelClass(region),
-            )}
-          >
-            {t.backToWire}
-          </Link>
-        </div>
-      )}
       <Link
         to="/"
         search={(prev) => ({ category: prev.category ?? "ai", region })}
@@ -78,6 +64,20 @@ export function Masthead() {
           </Link>
         ))}
       </div>
+      {eventRoute && (
+        <div className="mt-2 flex justify-start">
+          <Link
+            to="/"
+            search={{ category: eventRoute.category, region }}
+            className={cn(
+              "inline-flex items-center gap-1.5 font-mono text-xs font-bold text-foreground underline underline-offset-4 hover:text-wire-red",
+              monoLabelClass(region),
+            )}
+          >
+            {t.backToWire}
+          </Link>
+        </div>
+      )}
     </header>
   )
 }
