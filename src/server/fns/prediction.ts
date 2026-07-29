@@ -33,18 +33,24 @@ async function loadEventAndMakers(
   db: ReturnType<typeof getDb>,
   eventId: string
 ) {
-  const { data: event, error: eventError } = await db
-    .from("events")
-    .select("id, headline, summary, region")
-    .eq("id", eventId)
-    .single()
+  // Both queries key off eventId directly (not off each other's result), so
+  // they run as one round trip instead of two sequential ones.
+  const [
+    { data: event, error: eventError },
+    { data: makers, error: makersError },
+  ] = await Promise.all([
+    db
+      .from("events")
+      .select("id, headline, summary, region")
+      .eq("id", eventId)
+      .single(),
+    db
+      .from("decision_makers")
+      .select("id, name, role, mbti")
+      .eq("event_id", eventId)
+      .order("sort_order", { ascending: true }),
+  ])
   if (eventError) throw new Error(eventError.message)
-
-  const { data: makers, error: makersError } = await db
-    .from("decision_makers")
-    .select("id, name, role, mbti")
-    .eq("event_id", eventId)
-    .order("sort_order", { ascending: true })
   if (makersError) throw new Error(makersError.message)
   if (makers.length === 0) {
     throw new Error(

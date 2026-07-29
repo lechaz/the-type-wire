@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react"
 import { Link } from "@tanstack/react-router"
 import { stringsFor } from "@/lib/i18n"
 import { NEWS_REGIONS, REGION_CONFIG, monoLabelClass } from "@/lib/region"
@@ -18,19 +19,25 @@ export function Masthead() {
   const eventRoute = useEventRouteData()
   const t = stringsFor(region)
   const now = new Date()
-  // Explicit timeZone (matches cacheDateFor's reasoning in region.ts) —
-  // without it this defaults to the runtime's local zone, which is the
-  // server's (UTC on Vercel) during SSR and the visitor's own during
-  // client hydration. Near a UTC day boundary those disagree on the
-  // calendar date, so React swaps the SSR text for the client text right
-  // after load: a visible flash between two different dates/editions.
-  const dateline = now.toLocaleDateString(REGION_CONFIG[region].locale, {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: REGION_CONFIG[region].timeZone,
-  })
+  // The dateline is meant to read in the visitor's own local time, which
+  // SSR can't know — the server only sees its own clock/zone (UTC on
+  // Vercel). Rendering it there would either show the server's date (wrong
+  // for the visitor) or fight the client's post-hydration value (the
+  // flash this used to have). Computing it client-side only, after mount,
+  // sidesteps both: SSR and the first client render agree on empty, then
+  // this fills in once — an intentional, silent swap instead of an
+  // unpredictable one.
+  const [dateline, setDateline] = useState("")
+  useEffect(() => {
+    setDateline(
+      new Date().toLocaleDateString(REGION_CONFIG[region].locale, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    )
+  }, [region])
 
   return (
     <>
@@ -58,7 +65,8 @@ export function Masthead() {
             monoLabelClass(region)
           )}
         >
-          {dateline} · {t.edition(editionNumber(now))}
+          {dateline && `${dateline} · `}
+          {t.edition(editionNumber(now))}
         </p>
 
         <div className="mt-2 flex items-center justify-center gap-2 font-mono text-[11px] font-bold">
