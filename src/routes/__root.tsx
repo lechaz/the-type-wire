@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
@@ -92,8 +93,36 @@ export const Route = createRootRoute({
   shellComponent: RootDocument,
 })
 
+// Chunk hashes go stale the moment a new deploy ships — a tab left open
+// (or a link into a page cached by a search engine/social preview) can
+// still hold a route reference to a JS chunk Vercel no longer serves,
+// which surfaces as "Failed to fetch dynamically imported module".
+// vite:preloadError fires for exactly this case; reload once to pick up
+// the current build instead of leaving the user on a dead page.
+function useReloadOnStaleChunk() {
+  useEffect(() => {
+    const RELOAD_FLAG = "stale-chunk-reload"
+    const handler = (event: Event) => {
+      event.preventDefault()
+      if (sessionStorage.getItem(RELOAD_FLAG)) return
+      sessionStorage.setItem(RELOAD_FLAG, "1")
+      window.location.reload()
+    }
+    window.addEventListener("vite:preloadError", handler)
+    // Clear the guard only after this load has proven itself stable, so a
+    // reload that lands on a build that's STILL stale (e.g. a CDN edge
+    // that hasn't caught up yet) can't loop rapidly.
+    const clearGuard = window.setTimeout(() => sessionStorage.removeItem(RELOAD_FLAG), 5000)
+    return () => {
+      window.removeEventListener("vite:preloadError", handler)
+      window.clearTimeout(clearGuard)
+    }
+  }, [])
+}
+
 function RootDocument({ children }: { children: React.ReactNode }) {
   const region = useCurrentRegion()
+  useReloadOnStaleChunk()
 
   return (
     <html lang={REGION_CONFIG[region].htmlLang}>

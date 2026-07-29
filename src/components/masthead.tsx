@@ -24,48 +24,50 @@ export function Masthead() {
   })
 
   return (
-    <header className="border-b border-border px-6 pt-8 pb-3 text-center">
-      <Link
-        to="/"
-        search={(prev) => ({ category: prev.category ?? "ai", region })}
-        className="inline-block"
-      >
-        <p className="font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
-          The Type Wire
+    <>
+      <header className="border-b border-border px-6 pt-8 pb-3 text-center">
+        <Link
+          to="/"
+          search={(prev) => ({ category: prev.category ?? "ai", region })}
+          className="inline-block"
+        >
+          <p className="font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+            The Type Wire
+          </p>
+        </Link>
+        <p className={cn("mt-1 font-mono text-[11px] text-muted-foreground", monoLabelClass(region))}>
+          {t.tagline}
         </p>
-      </Link>
-      <p className={cn("mt-1 font-mono text-[11px] text-muted-foreground", monoLabelClass(region))}>
-        {t.tagline}
-      </p>
-      <p
-        className={cn(
-          "-mx-6 mt-3 border-t border-border px-6 pt-2 font-mono text-[11px] text-muted-foreground",
-          monoLabelClass(region),
-        )}
-      >
-        {dateline} · {t.edition(editionNumber(now))}
-      </p>
+        <p
+          className={cn(
+            "-mx-6 mt-3 border-t border-border px-6 pt-2 font-mono text-[11px] text-muted-foreground",
+            monoLabelClass(region),
+          )}
+        >
+          {dateline} · {t.edition(editionNumber(now))}
+        </p>
 
-      <div className="mt-2 flex items-center justify-center gap-2 font-mono text-[11px] font-bold">
-        {NEWS_REGIONS.map((r) => (
-          <Link
-            key={r}
-            to="/"
-            search={(prev) => ({ category: prev.category ?? "ai", region: r })}
-            className={cn(
-              "px-1.5 py-0.5 transition-colors",
-              monoLabelClass(r),
-              region === r
-                ? "bg-foreground text-background"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {REGION_CONFIG[r].label}
-          </Link>
-        ))}
-      </div>
+        <div className="mt-2 flex items-center justify-center gap-2 font-mono text-[11px] font-bold">
+          {NEWS_REGIONS.map((r) => (
+            <Link
+              key={r}
+              to="/"
+              search={(prev) => ({ category: prev.category ?? "ai", region: r })}
+              className={cn(
+                "px-1.5 py-0.5 transition-colors",
+                monoLabelClass(r),
+                region === r
+                  ? "bg-foreground text-background"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {REGION_CONFIG[r].label}
+            </Link>
+          ))}
+        </div>
+      </header>
       {eventRoute && (
-        <div className="mt-2 flex justify-start">
+        <div className="flex justify-start px-6 pt-2">
           <Link
             to="/"
             search={{ category: eventRoute.category, region }}
@@ -78,6 +80,6 @@ export function Masthead() {
           </Link>
         </div>
       )}
-    </header>
+    </>
   )
 }
