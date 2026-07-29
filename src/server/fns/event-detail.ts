@@ -4,8 +4,23 @@ import { getDb } from "@/server/db"
 import { generateStructured } from "@/server/gemini/client"
 import { ingestJsonSchema, IngestResultSchema } from "@/server/gemini/schemas"
 import { resolveCanonicalMbti } from "@/server/gemini/mbti-consistency"
-import { stringsFor } from "@/lib/i18n"
+import { MBTI_TYPES } from "@/lib/mbti"
 import { REGION_CONFIG, type NewsRegion } from "@/lib/region"
+
+// Gemini's reasoning occasionally spells out the type it just assigned
+// (e.g. "...consistent with an ENTJ."). When resolveCanonicalMbti overrides
+// that type, any such mention left in the text would contradict the badge
+// the reader actually sees, so strip the bare type code out rather than
+// the whole sentence — most reasoning never names the type in the first
+// place, so this only touches the few that do.
+const MBTI_TYPE_PATTERN = new RegExp(`\\b(${MBTI_TYPES.join("|")})\\b`, "gi")
+function stripMbtiMention(reasoning: string) {
+  return reasoning
+    .replace(MBTI_TYPE_PATTERN, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([.,;])/g, "$1")
+    .trim()
+}
 
 const GetEventDetailInput = z.object({
   eventId: z.string().uuid(),
@@ -106,24 +121,23 @@ export const getEventDetail = createServerFn({ method: "GET" })
       canonicalMbti.set(priorSeed.name, priorSeed.mbti)
     }
 
-    const t = stringsFor(event.region)
     const makerRows = ingest.decision_makers.map((m, i) => {
       const name = m.name.trim()
       const canonicalType = canonicalMbti.get(name)
       // Gemini's reasoning justifies whatever type it assigned THIS call —
       // if resolveCanonicalMbti overrides that with an already-established
-      // type for this person, keeping the original reasoning would leave
-      // the displayed type and its own justification naming two different
-      // types (observed live: badge showed ENTJ, reasoning argued for
-      // INTJ). Swap in a neutral note instead whenever the override
-      // actually changes anything.
+      // type for this person, a reasoning sentence that names the old type
+      // would contradict the badge the reader actually sees (observed live:
+      // badge showed ENTJ, reasoning argued for INTJ). Strip just the type
+      // mention rather than swapping in a "carried over" note, which is
+      // meaningless to a reader who never saw the prior assignment.
       const overridden = canonicalType !== undefined && canonicalType !== m.mbti
       return {
         event_id: event.id,
         name,
         role: m.role,
         mbti: canonicalType ?? m.mbti,
-        reasoning: overridden ? t.carriedOverReasoning : m.reasoning,
+        reasoning: overridden ? stripMbtiMention(m.reasoning) : m.reasoning,
         confidence: m.confidence,
         sort_order: i,
       }
