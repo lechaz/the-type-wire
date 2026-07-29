@@ -4,9 +4,17 @@ import type { NewsRegion } from "@/lib/region"
 export type FunctionCode = "Ni" | "Ne" | "Si" | "Se" | "Ti" | "Te" | "Fi" | "Fe"
 export type FunctionRole = "dominant" | "auxiliary" | "tertiary" | "inferior"
 
-export const FUNCTION_ROLES: FunctionRole[] = ["dominant", "auxiliary", "tertiary", "inferior"]
+export const FUNCTION_ROLES: FunctionRole[] = [
+  "dominant",
+  "auxiliary",
+  "tertiary",
+  "inferior",
+]
 
-export const FUNCTION_NAMES: Record<NewsRegion, Record<FunctionCode, string>> = {
+export const FUNCTION_NAMES: Record<
+  NewsRegion,
+  Record<FunctionCode, string>
+> = {
   us: {
     Ni: "Introverted Intuition",
     Ne: "Extraverted Intuition",
@@ -32,7 +40,10 @@ export const FUNCTION_NAMES: Record<NewsRegion, Record<FunctionCode, string>> = 
 // The dominant->inferior cognitive-function stack per type — the same
 // shorthand (Te, Ni, Se...) Gemini's prediction reasoning cites in
 // trait_reasoning, so this doubles as the glossary behind it.
-export const FUNCTION_STACK: Record<MbtiType, Record<FunctionRole, FunctionCode>> = {
+export const FUNCTION_STACK: Record<
+  MbtiType,
+  Record<FunctionRole, FunctionCode>
+> = {
   INTJ: { dominant: "Ni", auxiliary: "Te", tertiary: "Fi", inferior: "Se" },
   INTP: { dominant: "Ti", auxiliary: "Ne", tertiary: "Si", inferior: "Fe" },
   ENTJ: { dominant: "Te", auxiliary: "Ni", tertiary: "Se", inferior: "Fi" },
@@ -62,7 +73,10 @@ export function functionsFor(type: MbtiType, region: NewsRegion) {
 
 // Reverse lookup: every type that carries a given function in a given role
 // (or any role, when `role` is omitted) — e.g. "who has Te dominant".
-export function typesWithFunction(code: FunctionCode, role?: FunctionRole): MbtiType[] {
+export function typesWithFunction(
+  code: FunctionCode,
+  role?: FunctionRole
+): MbtiType[] {
   return (Object.keys(FUNCTION_STACK) as MbtiType[]).filter((type) => {
     const stack = FUNCTION_STACK[type]
     return role ? stack[role] === code : Object.values(stack).includes(code)

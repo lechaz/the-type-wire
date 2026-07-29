@@ -7,7 +7,8 @@ import { Masthead } from "@/components/masthead"
 import { LegendDrawer } from "@/components/legend-drawer"
 import { BackToTop } from "@/components/back-to-top"
 import { stringsFor } from "@/lib/i18n"
-import { CATEGORY_LABELS, type NewsCategory } from "@/lib/mbti"
+import { CATEGORY_LABELS } from "@/lib/mbti"
+import type { NewsCategory } from "@/lib/mbti"
 import { REGION_CONFIG, pickRegionFromMatches } from "@/lib/region"
 import { useCurrentRegion } from "@/lib/use-current-region"
 import { buildMetaTags } from "@/lib/site-meta"
@@ -28,9 +29,14 @@ export const Route = createRootRoute({
     const region = pickRegionFromMatches(ctx.matches)
     const t = stringsFor(region)
 
-    const matches = ctx.matches as ReadonlyArray<{ routeId: string; search?: unknown }>
+    const matches = ctx.matches as ReadonlyArray<{
+      routeId: string
+      search?: unknown
+    }>
     const homeMatch = matches.find((m) => m.routeId === "/")
-    const category = (homeMatch?.search as { category?: NewsCategory } | undefined)?.category
+    const category = (
+      homeMatch?.search as { category?: NewsCategory } | undefined
+    )?.category
     const pageTitle = category
       ? `${CATEGORY_LABELS[region][category]} — ${REGION_CONFIG[region].label}`
       : null
@@ -112,7 +118,10 @@ function useReloadOnStaleChunk() {
     // Clear the guard only after this load has proven itself stable, so a
     // reload that lands on a build that's STILL stale (e.g. a CDN edge
     // that hasn't caught up yet) can't loop rapidly.
-    const clearGuard = window.setTimeout(() => sessionStorage.removeItem(RELOAD_FLAG), 5000)
+    const clearGuard = window.setTimeout(
+      () => sessionStorage.removeItem(RELOAD_FLAG),
+      5000
+    )
     return () => {
       window.removeEventListener("vite:preloadError", handler)
       window.clearTimeout(clearGuard)

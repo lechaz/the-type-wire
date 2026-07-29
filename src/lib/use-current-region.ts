@@ -1,6 +1,7 @@
 import { useMatches } from "@tanstack/react-router"
 import type { NewsCategory } from "./mbti"
-import { pickRegionFromMatches, type NewsRegion } from "./region"
+import { pickRegionFromMatches } from "./region"
+import type { NewsRegion } from "./region"
 
 type EventLoaderData = {
   detail?: { event?: { category?: NewsCategory; region?: NewsRegion } }
@@ -16,7 +17,8 @@ export function useCurrentRegion(): NewsRegion {
 export function useEventRouteData() {
   const matches = useMatches()
   const eventMatch = matches.find((m) => m.routeId === "/event/$eventId/")
-  const event = (eventMatch?.loaderData as EventLoaderData | undefined)?.detail?.event
+  const event = (eventMatch?.loaderData as EventLoaderData | undefined)?.detail
+    ?.event
   if (!event?.region || !event?.category) return null
   return { category: event.category, region: event.region }
 }

@@ -9,13 +9,26 @@
 // alias instantiation instead — verified by isolated repro against
 // @supabase/supabase-js 2.110.
 
-export type NewsCategoryRow = "ai" | "finance" | "politics" | "international" | "technology"
+export type NewsCategoryRow =
+  "ai" | "finance" | "politics" | "international" | "technology"
 export type NewsRegionRow = "us" | "tw"
 export type MbtiTypeRow =
-  | "INTJ" | "INTP" | "ENTJ" | "ENTP"
-  | "INFJ" | "INFP" | "ENFJ" | "ENFP"
-  | "ISTJ" | "ISFJ" | "ESTJ" | "ESFJ"
-  | "ISTP" | "ISFP" | "ESTP" | "ESFP"
+  | "INTJ"
+  | "INTP"
+  | "ENTJ"
+  | "ENTP"
+  | "INFJ"
+  | "INFP"
+  | "ENFJ"
+  | "ENFP"
+  | "ISTJ"
+  | "ISFJ"
+  | "ESTJ"
+  | "ESFJ"
+  | "ISTP"
+  | "ISFP"
+  | "ESTP"
+  | "ESFP"
 export type AppRoleRow = "admin" | "user"
 
 export interface Database {

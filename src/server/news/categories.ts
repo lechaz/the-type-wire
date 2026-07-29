@@ -4,7 +4,10 @@ import type { NewsRegion } from "@/lib/region"
 // Search query fed to the Currents API /search endpoint per region+category.
 // TW queries use Chinese terms since the API matches against article text
 // in the article's own language.
-export const CATEGORY_QUERIES: Record<NewsRegion, Record<NewsCategory, string>> = {
+export const CATEGORY_QUERIES: Record<
+  NewsRegion,
+  Record<NewsCategory, string>
+> = {
   us: {
     ai: "artificial intelligence",
     finance: "finance markets economy",

@@ -1,14 +1,24 @@
 import { useState } from "react"
 import { MbtiFigurine } from "@/components/mbti-figurine"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { MBTI_TYPES, mbtiFamily, type MbtiFamily } from "@/lib/mbti"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import { MBTI_TYPES, mbtiFamily } from "@/lib/mbti"
+import type { MbtiFamily } from "@/lib/mbti"
 import { MBTI_DESCRIPTIONS } from "@/lib/mbti-descriptions"
 import { functionsFor } from "@/lib/mbti-functions"
 import { stringsFor } from "@/lib/i18n"
 import type { NewsRegion } from "@/lib/region"
 import { cn } from "@/lib/utils"
 
-const ROLE_ABBR = { dominant: "Dom", auxiliary: "Aux", tertiary: "Ter", inferior: "Inf" } as const
+const ROLE_ABBR = {
+  dominant: "Dom",
+  auxiliary: "Aux",
+  tertiary: "Ter",
+  inferior: "Inf",
+} as const
 
 const FAMILY_TEXT: Record<MbtiFamily, string> = {
   analyst: "text-mbti-analyst",
@@ -48,7 +58,12 @@ export function MbtiCodex({ region }: { region: NewsRegion }) {
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
       {FAMILIES.map((family) => (
         <div key={family}>
-          <p className={cn("mb-2 font-display text-base font-bold", FAMILY_TEXT[family])}>
+          <p
+            className={cn(
+              "mb-2 font-display text-base font-bold",
+              FAMILY_TEXT[family]
+            )}
+          >
             {FAMILY_LABEL[family]}
           </p>
           <div className="flex flex-col gap-2">
@@ -57,12 +72,17 @@ export function MbtiCodex({ region }: { region: NewsRegion }) {
               return (
                 <div
                   key={type}
-                  className={cn("flex items-start gap-3 border p-2", FAMILY_BORDER[family])}
+                  className={cn(
+                    "flex items-start gap-3 border p-2",
+                    FAMILY_BORDER[family]
+                  )}
                 >
                   <MbtiFigurine type={type} size={56} className="shrink-0" />
                   <div className="min-w-0">
                     <p className="flex items-baseline gap-1.5">
-                      <span className="font-mono text-xs font-bold">{type}</span>
+                      <span className="font-mono text-xs font-bold">
+                        {type}
+                      </span>
                       <span className="font-display text-sm font-bold text-foreground">
                         {info.title}
                       </span>
@@ -79,21 +99,30 @@ export function MbtiCodex({ region }: { region: NewsRegion }) {
                                 // See prediction-timeline.tsx's identical guard: a
                                 // stale close from the previously-hovered item can
                                 // arrive after this one's open and must not clobber it.
-                                setOpenKey((current) => (open ? key : current === key ? null : current))
+                                setOpenKey((current) =>
+                                  open ? key : current === key ? null : current
+                                )
                               }
                             >
                               <TooltipTrigger
                                 render={
                                   <button
                                     type="button"
-                                    onClick={() => setOpenKey((k) => (k === key ? null : key))}
-                                    className="cursor-help whitespace-nowrap font-mono text-[10px] tracking-wide text-muted-foreground underline decoration-dotted underline-offset-2 focus-visible:outline-none"
+                                    onClick={() =>
+                                      setOpenKey((k) =>
+                                        k === key ? null : key
+                                      )
+                                    }
+                                    className="cursor-help font-mono text-[10px] tracking-wide whitespace-nowrap text-muted-foreground underline decoration-dotted underline-offset-2 focus-visible:outline-none"
                                   />
                                 }
                               >
                                 {f.code} ({ROLE_ABBR[f.role]})
                               </TooltipTrigger>
-                              <TooltipContent className="max-w-64 rounded-none" sideOffset={6}>
+                              <TooltipContent
+                                className="max-w-64 rounded-none"
+                                sideOffset={6}
+                              >
                                 {f.code} · {ROLE_LABEL[f.role]}: {f.name}
                               </TooltipContent>
                             </Tooltip>
@@ -101,7 +130,9 @@ export function MbtiCodex({ region }: { region: NewsRegion }) {
                         )
                       })}
                     </p>
-                    <p className="mt-1 font-serif text-xs text-muted-foreground">{info.blurb}</p>
+                    <p className="mt-1 font-serif text-xs text-muted-foreground">
+                      {info.blurb}
+                    </p>
                   </div>
                 </div>
               )

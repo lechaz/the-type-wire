@@ -2,9 +2,14 @@ import { createServerFn } from "@tanstack/react-start"
 import { z } from "zod"
 import { getDb } from "@/server/db"
 import { generateStructured } from "@/server/gemini/client"
-import { timelineJsonSchema, TimelineResultSchema, type TimelineResult } from "@/server/gemini/schemas"
-import { MBTI_TYPES, mbtiFamily, type MbtiType } from "@/lib/mbti"
-import { REGION_CONFIG, type NewsRegion } from "@/lib/region"
+import {
+  timelineJsonSchema,
+  TimelineResultSchema,
+} from "@/server/gemini/schemas"
+import type { TimelineResult } from "@/server/gemini/schemas"
+import { MBTI_TYPES, mbtiFamily } from "@/lib/mbti"
+import { REGION_CONFIG } from "@/lib/region"
+import type { NewsRegion } from "@/lib/region"
 
 // Wire Red (#C21725) is reserved for the default timeline (see
 // DEFAULT_BRANCH_COLOR in the timeline route) — a what-if branch is colored
@@ -24,13 +29,17 @@ type DecisionMaker = {
   mbti: string
 }
 
-async function loadEventAndMakers(db: ReturnType<typeof getDb>, eventId: string) {
+async function loadEventAndMakers(
+  db: ReturnType<typeof getDb>,
+  eventId: string
+) {
   const { data: event, error: eventError } = await db
     .from("events")
     .select("id, headline, summary, region")
     .eq("id", eventId)
     .single()
-  if (eventError || !event) throw new Error(eventError?.message ?? "Event not found")
+  if (eventError || !event)
+    throw new Error(eventError?.message ?? "Event not found")
 
   const { data: makers, error: makersError } = await db
     .from("decision_makers")
@@ -39,7 +48,9 @@ async function loadEventAndMakers(db: ReturnType<typeof getDb>, eventId: string)
     .order("sort_order", { ascending: true })
   if (makersError) throw new Error(makersError.message)
   if (!makers || makers.length === 0) {
-    throw new Error("Decision makers not found — open the event detail view first.")
+    throw new Error(
+      "Decision makers not found — open the event detail view first."
+    )
   }
 
   return { event, makers: makers as DecisionMaker[] }
@@ -53,7 +64,10 @@ function timelinePrompt(params: {
   region: NewsRegion
 }) {
   const roster = params.makers
-    .map((m) => `- ${m.name} (${m.role}): ${params.effectiveMbti.get(m.id) ?? m.mbti}`)
+    .map(
+      (m) =>
+        `- ${m.name} (${m.role}): ${params.effectiveMbti.get(m.id) ?? m.mbti}`
+    )
     .join("\n")
   const { promptLanguage } = REGION_CONFIG[params.region]
 
@@ -72,7 +86,9 @@ function timelinePrompt(params: {
     "trait_reasoning must explicitly connect a driver's MBTI traits (e.g. Ti, Fe,",
     "Ne) to the predicted action. Provide an overall_confidence and a short",
     "reasoning_summary for the whole timeline.",
-    ...(promptLanguage ? ["", `Write every generated text field in ${promptLanguage}.`] : []),
+    ...(promptLanguage
+      ? ["", `Write every generated text field in ${promptLanguage}.`]
+      : []),
   ].join("\n")
 }
 
@@ -92,10 +108,13 @@ async function insertTimeline(params: {
       overall_confidence: timeline.overall_confidence,
       reasoning_summary: timeline.reasoning_summary,
     })
-    .select("id, event_id, is_default, overall_confidence, reasoning_summary, created_at")
+    .select(
+      "id, event_id, is_default, overall_confidence, reasoning_summary, created_at"
+    )
     .single()
 
-  if (predictionError || !prediction) throw new Error(predictionError?.message ?? "Insert failed")
+  if (predictionError || !prediction)
+    throw new Error(predictionError?.message ?? "Insert failed")
 
   const today = new Date()
   const nodeRows = timeline.nodes
@@ -119,7 +138,9 @@ async function insertTimeline(params: {
   const { data: nodes, error: nodesError } = await db
     .from("prediction_nodes")
     .insert(nodeRows)
-    .select("id, day_offset, predicted_date, headline, summary, driver_names, trait_reasoning, confidence, sort_order")
+    .select(
+      "id, day_offset, predicted_date, headline, summary, driver_names, trait_reasoning, confidence, sort_order"
+    )
 
   if (nodesError) throw new Error(nodesError.message)
 
@@ -135,7 +156,9 @@ export const getPrediction = createServerFn({ method: "GET" })
 
     const { data: existing, error: existingError } = await db
       .from("predictions")
-      .select("id, event_id, is_default, overall_confidence, reasoning_summary, created_at")
+      .select(
+        "id, event_id, is_default, overall_confidence, reasoning_summary, created_at"
+      )
       .eq("event_id", data.eventId)
       .eq("is_default", true)
       .maybeSingle()
@@ -144,7 +167,9 @@ export const getPrediction = createServerFn({ method: "GET" })
     if (existing) {
       const { data: nodes, error: nodesError } = await db
         .from("prediction_nodes")
-        .select("id, day_offset, predicted_date, headline, summary, driver_names, trait_reasoning, confidence, sort_order")
+        .select(
+          "id, day_offset, predicted_date, headline, summary, driver_names, trait_reasoning, confidence, sort_order"
+        )
         .eq("prediction_id", existing.id)
         .order("sort_order", { ascending: true })
       if (nodesError) throw new Error(nodesError.message)
@@ -166,7 +191,12 @@ export const getPrediction = createServerFn({ method: "GET" })
       parse: (raw) => TimelineResultSchema.parse(raw),
     })
 
-    return insertTimeline({ db, eventId: data.eventId, isDefault: true, timeline })
+    return insertTimeline({
+      db,
+      eventId: data.eventId,
+      isDefault: true,
+      timeline,
+    })
   })
 
 const RunScenarioInput = z.object({
@@ -181,7 +211,7 @@ export const runScenario = createServerFn({ method: "POST" })
     const db = getDb()
     const { event, makers } = await loadEventAndMakers(db, data.eventId)
     const effectiveMbti = new Map<string, string>(
-      makers.map((m) => [m.id, data.overrides[m.id] ?? m.mbti]),
+      makers.map((m) => [m.id, data.overrides[m.id] ?? m.mbti])
     )
 
     const timeline = await generateStructured({
@@ -203,7 +233,7 @@ export const runScenario = createServerFn({ method: "POST" })
       timeline,
     })
 
-    const [firstOverrideMbti] = Object.values(data.overrides) as MbtiType[]
+    const [firstOverrideMbti] = Object.values(data.overrides)
     const branchColor = firstOverrideMbti
       ? (FAMILY_INK[mbtiFamily(firstOverrideMbti)] ?? "#565f65")
       : "#565f65"
@@ -218,10 +248,13 @@ export const runScenario = createServerFn({ method: "POST" })
         prediction_id: prediction.id,
         branch_color: branchColor,
       })
-      .select("id, event_id, label, overrides, prediction_id, branch_color, created_at")
+      .select(
+        "id, event_id, label, overrides, prediction_id, branch_color, created_at"
+      )
       .single()
 
-    if (scenarioError || !scenario) throw new Error(scenarioError?.message ?? "Insert failed")
+    if (scenarioError || !scenario)
+      throw new Error(scenarioError?.message ?? "Insert failed")
 
     return { scenario, prediction, nodes }
   })

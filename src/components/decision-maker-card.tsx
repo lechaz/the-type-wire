@@ -1,9 +1,16 @@
 import { MbtiFigurine } from "@/components/mbti-figurine"
-import { mbtiFamily, type MbtiType } from "@/lib/mbti"
+import { mbtiFamily } from "@/lib/mbti"
+import type { MbtiType } from "@/lib/mbti"
 import { stringsFor } from "@/lib/i18n"
 import type { NewsRegion } from "@/lib/region"
 
-function SignalMeter({ confidence, suffix }: { confidence: number; suffix: string }) {
+function SignalMeter({
+  confidence,
+  suffix,
+}: {
+  confidence: number
+  suffix: string
+}) {
   const filled = Math.round(confidence / 20)
   return (
     <div
@@ -71,7 +78,9 @@ export function DecisionMakerCard({
           <SignalMeter confidence={confidence} suffix={t.confidenceSuffix} />
         </span>
       </summary>
-      <p className="mt-2 pl-[52px] font-serif text-sm text-muted-foreground">{reasoning}</p>
+      <p className="mt-2 pl-[52px] font-serif text-sm text-muted-foreground">
+        {reasoning}
+      </p>
     </details>
   )
 }

@@ -9,7 +9,12 @@ import { stringsFor } from "@/lib/i18n"
 import { CategoryTabs } from "@/components/category-tabs"
 import { EventCard } from "@/components/event-card"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyHeader, EmptyTitle, EmptyDescription } from "@/components/ui/empty"
+import {
+  Empty,
+  EmptyHeader,
+  EmptyTitle,
+  EmptyDescription,
+} from "@/components/ui/empty"
 
 const searchSchema = z.object({
   category: z.enum(NEWS_CATEGORIES).catch("ai"),
@@ -17,9 +22,14 @@ const searchSchema = z.object({
 })
 
 export const Route = createFileRoute("/")({
-  validateSearch: (search: Record<string, unknown>) => searchSchema.parse(search),
-  loaderDeps: ({ search }) => ({ category: search.category, region: search.region }),
-  loader: ({ deps }) => getEvents({ data: { category: deps.category, region: deps.region } }),
+  validateSearch: (search: Record<string, unknown>) =>
+    searchSchema.parse(search),
+  loaderDeps: ({ search }) => ({
+    category: search.category,
+    region: search.region,
+  }),
+  loader: ({ deps }) =>
+    getEvents({ data: { category: deps.category, region: deps.region } }),
   component: Home,
 })
 
@@ -34,12 +44,18 @@ function Home() {
   async function handleRefresh() {
     setRefreshing(true)
     try {
-      const result = await getEvents({ data: { category, region, forceRefresh: true } })
+      const result = await getEvents({
+        data: { category, region, forceRefresh: true },
+      })
       await router.invalidate()
       if (result.status === "degraded") {
         toast.error(t.refreshFailedToast)
       } else {
-        toast.success(result.status === "no_new" ? t.noNewUpdatesToast(label) : t.refreshedToast(label))
+        toast.success(
+          result.status === "no_new"
+            ? t.noNewUpdatesToast(label)
+            : t.refreshedToast(label)
+        )
       }
     } catch {
       toast.error(t.refreshFailedToast)
@@ -50,11 +66,18 @@ function Home() {
 
   return (
     <main className="mx-auto max-w-5xl px-6 pt-8 pb-14">
-      <h1 className="sr-only">The Type Wire: today's headlines, filed by personality</h1>
+      <h1 className="sr-only">
+        The Type Wire: today's headlines, filed by personality
+      </h1>
 
       <div className="flex flex-wrap items-center justify-between gap-4">
         <CategoryTabs active={category} region={region} />
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefresh}
+          disabled={refreshing}
+        >
           {refreshing ? t.refreshing : t.refresh}
         </Button>
       </div>
@@ -73,12 +96,23 @@ function Home() {
         {events.length === 0 && (
           <Empty className="border">
             <EmptyHeader>
-              <EmptyTitle>{status === "degraded" ? t.unavailableTitle(label) : t.emptyTitle(label)}</EmptyTitle>
+              <EmptyTitle>
+                {status === "degraded"
+                  ? t.unavailableTitle(label)
+                  : t.emptyTitle(label)}
+              </EmptyTitle>
               <EmptyDescription>
-                {status === "degraded" ? t.unavailableDescription : t.emptyDescription}
+                {status === "degraded"
+                  ? t.unavailableDescription
+                  : t.emptyDescription}
               </EmptyDescription>
             </EmptyHeader>
-            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefresh}
+              disabled={refreshing}
+            >
               {refreshing ? t.refreshing : t.refresh}
             </Button>
           </Empty>

@@ -4,22 +4,70 @@ import type { NewsRegion } from "@/lib/region"
 type Description = { title: string; blurb: string }
 
 const en: Record<MbtiType, Description> = {
-  INTJ: { title: "The Architect", blurb: "Strategic, independent, plans three moves ahead." },
-  INTP: { title: "The Logician", blurb: "Curious theorist, chases ideas to their root." },
-  ENTJ: { title: "The Commander", blurb: "Decisive leader, builds systems out of ambition." },
-  ENTP: { title: "The Debater", blurb: "Quick-witted, argues any side to test the truth." },
-  INFJ: { title: "The Advocate", blurb: "Idealistic and insightful, plays the long game." },
-  INFP: { title: "The Mediator", blurb: "Values-driven dreamer, seeks meaning over rules." },
-  ENFJ: { title: "The Protagonist", blurb: "Charismatic mobilizer, leads by inspiring others." },
-  ENFP: { title: "The Campaigner", blurb: "Enthusiastic connector, sees possibility everywhere." },
-  ISTJ: { title: "The Logistician", blurb: "Methodical and dutiful, trusts what's proven." },
-  ISFJ: { title: "The Defender", blurb: "Quietly protective, loyal to people and process." },
-  ESTJ: { title: "The Executive", blurb: "Organized enforcer, gets things done by the book." },
-  ESFJ: { title: "The Consul", blurb: "Sociable caretaker, keeps the group in harmony." },
-  ISTP: { title: "The Virtuoso", blurb: "Pragmatic tinkerer, acts fast under pressure." },
-  ISFP: { title: "The Adventurer", blurb: "Gentle improviser, follows instinct over plans." },
-  ESTP: { title: "The Entrepreneur", blurb: "Bold dealmaker, thrives on immediate risk." },
-  ESFP: { title: "The Entertainer", blurb: "Spontaneous performer, reads the room instantly." },
+  INTJ: {
+    title: "The Architect",
+    blurb: "Strategic, independent, plans three moves ahead.",
+  },
+  INTP: {
+    title: "The Logician",
+    blurb: "Curious theorist, chases ideas to their root.",
+  },
+  ENTJ: {
+    title: "The Commander",
+    blurb: "Decisive leader, builds systems out of ambition.",
+  },
+  ENTP: {
+    title: "The Debater",
+    blurb: "Quick-witted, argues any side to test the truth.",
+  },
+  INFJ: {
+    title: "The Advocate",
+    blurb: "Idealistic and insightful, plays the long game.",
+  },
+  INFP: {
+    title: "The Mediator",
+    blurb: "Values-driven dreamer, seeks meaning over rules.",
+  },
+  ENFJ: {
+    title: "The Protagonist",
+    blurb: "Charismatic mobilizer, leads by inspiring others.",
+  },
+  ENFP: {
+    title: "The Campaigner",
+    blurb: "Enthusiastic connector, sees possibility everywhere.",
+  },
+  ISTJ: {
+    title: "The Logistician",
+    blurb: "Methodical and dutiful, trusts what's proven.",
+  },
+  ISFJ: {
+    title: "The Defender",
+    blurb: "Quietly protective, loyal to people and process.",
+  },
+  ESTJ: {
+    title: "The Executive",
+    blurb: "Organized enforcer, gets things done by the book.",
+  },
+  ESFJ: {
+    title: "The Consul",
+    blurb: "Sociable caretaker, keeps the group in harmony.",
+  },
+  ISTP: {
+    title: "The Virtuoso",
+    blurb: "Pragmatic tinkerer, acts fast under pressure.",
+  },
+  ISFP: {
+    title: "The Adventurer",
+    blurb: "Gentle improviser, follows instinct over plans.",
+  },
+  ESTP: {
+    title: "The Entrepreneur",
+    blurb: "Bold dealmaker, thrives on immediate risk.",
+  },
+  ESFP: {
+    title: "The Entertainer",
+    blurb: "Spontaneous performer, reads the room instantly.",
+  },
 }
 
 const zhHant: Record<MbtiType, Description> = {
@@ -41,7 +89,10 @@ const zhHant: Record<MbtiType, Description> = {
   ESFP: { title: "表演者", blurb: "即興的表演者，瞬間就能讀懂全場氣氛。" },
 }
 
-export const MBTI_DESCRIPTIONS: Record<NewsRegion, Record<MbtiType, Description>> = {
+export const MBTI_DESCRIPTIONS: Record<
+  NewsRegion,
+  Record<MbtiType, Description>
+> = {
   us: en,
   tw: zhHant,
 }

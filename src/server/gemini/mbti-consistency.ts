@@ -16,9 +16,11 @@ import type { MbtiTypeRow } from "@/server/db-types"
 // lookup missed exactly the cross-region collisions it needs to catch.
 export async function resolveCanonicalMbti(
   db: ReturnType<typeof getDb>,
-  candidates: { name: string; mbti: MbtiTypeRow }[],
+  candidates: { name: string; mbti: MbtiTypeRow }[]
 ): Promise<Map<string, MbtiTypeRow>> {
-  const names = [...new Set(candidates.map((c) => c.name.trim()).filter(Boolean))]
+  const names = [
+    ...new Set(candidates.map((c) => c.name.trim()).filter(Boolean)),
+  ]
   if (names.length === 0) return new Map()
 
   const { data: nameMatches, error: nameError } = await db

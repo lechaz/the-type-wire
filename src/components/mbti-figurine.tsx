@@ -1,4 +1,5 @@
-import { MBTI_TYPES, type MbtiType } from "@/lib/mbti"
+import { MBTI_TYPES } from "@/lib/mbti"
+import type { MbtiType } from "@/lib/mbti"
 import { cn } from "@/lib/utils"
 
 export function MbtiFigurine({

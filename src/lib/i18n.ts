@@ -13,7 +13,8 @@ const en = {
   emptyTitle: (label: string) => `No ${label.toLowerCase()} dispatches yet`,
   emptyDescription: "The wire hasn't filed anything in this desk today.",
   unavailableTitle: (label: string) => `${label} desk is offline`,
-  unavailableDescription: "The wire's feed is unreachable right now. Try again shortly.",
+  unavailableDescription:
+    "The wire's feed is unreachable right now. Try again shortly.",
   desk: "desk",
   backToWire: "← Back to the wire",
   byline: "Byline: who's driving this",

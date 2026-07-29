@@ -5,7 +5,8 @@ import { generateStructured } from "@/server/gemini/client"
 import { ingestJsonSchema, IngestResultSchema } from "@/server/gemini/schemas"
 import { resolveCanonicalMbti } from "@/server/gemini/mbti-consistency"
 import { MBTI_TYPES } from "@/lib/mbti"
-import { REGION_CONFIG, type NewsRegion } from "@/lib/region"
+import { REGION_CONFIG } from "@/lib/region"
+import type { NewsRegion } from "@/lib/region"
 
 // Gemini's reasoning occasionally spells out the type it just assigned
 // (e.g. "...consistent with an ENTJ."). When resolveCanonicalMbti overrides
@@ -35,7 +36,12 @@ const GetEventDetailInput = z.object({
 // of a raw error crash.
 export const EVENT_NOT_FOUND = "EVENT_NOT_FOUND"
 
-function ingestPrompt(headline: string, sourceName: string, snippet: string, region: NewsRegion) {
+function ingestPrompt(
+  headline: string,
+  sourceName: string,
+  snippet: string,
+  region: NewsRegion
+) {
   const { promptLanguage } = REGION_CONFIG[region]
   return [
     "You are analyzing a news event to identify its key real-world decision makers",
@@ -50,7 +56,9 @@ function ingestPrompt(headline: string, sourceName: string, snippet: string, reg
     "event. For each, assign an MBTI type with a short reasoning grounded in their",
     "actual public behavior (not the news snippet alone), plus a 0-100 confidence.",
     "Also write a neutral 1-2 sentence summary of the event itself.",
-    ...(promptLanguage ? ["", `Write every generated text field in ${promptLanguage}.`] : []),
+    ...(promptLanguage
+      ? ["", `Write every generated text field in ${promptLanguage}.`]
+      : []),
   ].join("\n")
 }
 
@@ -61,7 +69,9 @@ export const getEventDetail = createServerFn({ method: "GET" })
 
     const { data: event, error: eventError } = await db
       .from("events")
-      .select("id, category, region, headline, source_name, source_url, published_at, summary")
+      .select(
+        "id, category, region, headline, source_name, source_url, published_at, summary"
+      )
       .eq("id", data.eventId)
       .single()
 
@@ -98,7 +108,12 @@ export const getEventDetail = createServerFn({ method: "GET" })
     }
 
     const ingest = await generateStructured({
-      prompt: ingestPrompt(event.headline, event.source_name, event.summary, event.region),
+      prompt: ingestPrompt(
+        event.headline,
+        event.source_name,
+        event.summary,
+        event.region
+      ),
       schema: ingestJsonSchema(event.region),
       parse: (raw) => IngestResultSchema.parse(raw),
     })
@@ -115,7 +130,7 @@ export const getEventDetail = createServerFn({ method: "GET" })
     // independent Gemini call to agree with itself.
     const canonicalMbti = await resolveCanonicalMbti(
       db,
-      ingest.decision_makers.map((m) => ({ name: m.name, mbti: m.mbti })),
+      ingest.decision_makers.map((m) => ({ name: m.name, mbti: m.mbti }))
     )
     if (priorSeed && !canonicalMbti.has(priorSeed.name)) {
       canonicalMbti.set(priorSeed.name, priorSeed.mbti)

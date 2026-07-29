@@ -1,7 +1,12 @@
 import { useState } from "react"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { stringsFor } from "@/lib/i18n"
-import { REGION_CONFIG, monoLabelClass, type NewsRegion } from "@/lib/region"
+import { REGION_CONFIG, monoLabelClass } from "@/lib/region"
+import type { NewsRegion } from "@/lib/region"
 import { cn } from "@/lib/utils"
 
 type Node = {
@@ -39,7 +44,10 @@ export function PredictionTimeline({
   return (
     <div>
       <div className="animate-card-in flex flex-wrap items-start gap-2">
-        <span className="mt-1.5 size-2.5 shrink-0" style={{ backgroundColor: branchColor }} />
+        <span
+          className="mt-1.5 size-2.5 shrink-0"
+          style={{ backgroundColor: branchColor }}
+        />
         <div className="flex min-w-0 flex-col">
           {labelLines.map((line, i) => (
             <span
@@ -94,14 +102,18 @@ export function PredictionTimeline({
               // clear the shared id if it's still this node's turn to,
               // otherwise a stale close from A would blank out B's tooltip
               // right after it opens.
-              setOpenNodeId((current) => (open ? n.id : current === n.id ? null : current))
+              setOpenNodeId((current) =>
+                open ? n.id : current === n.id ? null : current
+              )
             }
           >
             <TooltipTrigger
               render={
                 <button
                   type="button"
-                  onClick={() => setOpenNodeId((id) => (id === n.id ? null : n.id))}
+                  onClick={() =>
+                    setOpenNodeId((id) => (id === n.id ? null : n.id))
+                  }
                   className="animate-card-in relative block w-full text-left focus-visible:outline-none"
                 />
               }
@@ -115,7 +127,7 @@ export function PredictionTimeline({
               <span
                 className={cn(
                   "font-mono text-[10px] text-muted-foreground",
-                  monoLabelClass(region),
+                  monoLabelClass(region)
                 )}
               >
                 {t.day(n.day_offset)} ·{" "}
@@ -124,15 +136,16 @@ export function PredictionTimeline({
                   day: "numeric",
                 })}
               </span>
-              <span className="mt-0.5 block text-balance font-display text-sm leading-snug font-bold text-foreground">
+              <span className="mt-0.5 block font-display text-sm leading-snug font-bold text-balance text-foreground">
                 {n.headline}
               </span>
-              <span className="mt-0.5 block text-pretty font-serif text-xs text-muted-foreground">
+              <span className="mt-0.5 block font-serif text-xs text-pretty text-muted-foreground">
                 {n.summary}
               </span>
             </TooltipTrigger>
             <TooltipContent className="max-w-64 rounded-none" sideOffset={6}>
-              <span className="font-mono">{n.driver_names.join(", ")}:</span> {n.trait_reasoning}
+              <span className="font-mono">{n.driver_names.join(", ")}:</span>{" "}
+              {n.trait_reasoning}
             </TooltipContent>
           </Tooltip>
         ))}

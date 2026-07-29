@@ -3,10 +3,11 @@ import {
   NewsSearchResponseSchema,
   RapidApiSearchResponseSchema,
   GdeltSearchResponseSchema,
-  type NewsArticle,
 } from "./types"
+import type { NewsArticle } from "./types"
 import type { NewsCategory } from "@/lib/mbti"
-import { REGION_CONFIG, type NewsRegion } from "@/lib/region"
+import { REGION_CONFIG } from "@/lib/region"
+import type { NewsRegion } from "@/lib/region"
 
 type NewsProvider = "currents" | "rapidapi" | "gdelt"
 // Every provider this app knows how to query, in priority order. Currents
@@ -25,7 +26,7 @@ const MAX_SOURCES = 2
 // Dev override: set to a provider to drop it from rotation entirely
 // (debugging, cost control, isolating a provider-specific bug) without
 // renumbering MAX_SOURCES. Leave null to use the full priority list as-is.
-const EXCLUDE_PROVIDER: NewsProvider | null = "gdelt" //set "currents"/"rapidapi"/"gdelt" to exclude one, or null
+const EXCLUDE_PROVIDER: NewsProvider | null = "gdelt" // set "currents"/"rapidapi"/"gdelt" to exclude one, or null
 
 function activeProviders(): NewsProvider[] {
   const pool = ALL_PROVIDERS.filter((p) => p !== EXCLUDE_PROVIDER)
@@ -35,7 +36,9 @@ function activeProviders(): NewsProvider[] {
 
 // RapidAPI's Real-Time News Data 400s on the plain "zh" tag region.ts uses
 // for TW — it wants the BCP47 tag zh-Hant specifically. Verified live.
-const RAPIDAPI_LANG_OVERRIDE: Partial<Record<NewsRegion, string>> = { tw: "zh-Hant" }
+const RAPIDAPI_LANG_OVERRIDE: Partial<Record<NewsRegion, string>> = {
+  tw: "zh-Hant",
+}
 
 // Free Currents plan: 20 req/min. RapidAPI BASIC plan: 1 req/sec (confirmed
 // by probing — requests 2+ within the same second come back 429). Each
@@ -59,11 +62,16 @@ async function throttleRapidApi() {
 
 const LOOKBACK_DAYS = 3
 
-async function searchCurrentsOnce(query: string, region: NewsRegion): Promise<Response> {
+async function searchCurrentsOnce(
+  query: string,
+  region: NewsRegion
+): Promise<Response> {
   const key = process.env.CURRENTS_API_KEY
   const base = process.env.CURRENTS_API_BASE
   if (!key || !base) {
-    throw new Error("Missing CURRENTS_API_KEY or CURRENTS_API_BASE. Check .env.local.")
+    throw new Error(
+      "Missing CURRENTS_API_KEY or CURRENTS_API_BASE. Check .env.local."
+    )
   }
 
   const { country, lang } = REGION_CONFIG[region]
@@ -82,7 +90,10 @@ async function searchCurrentsOnce(query: string, region: NewsRegion): Promise<Re
   })
 }
 
-async function searchCurrents(query: string, region: NewsRegion): Promise<NewsArticle[]> {
+async function searchCurrents(
+  query: string,
+  region: NewsRegion
+): Promise<NewsArticle[]> {
   await throttleCurrents()
   let res = await searchCurrentsOnce(query, region)
 
@@ -113,7 +124,10 @@ async function searchCurrents(query: string, region: NewsRegion): Promise<NewsAr
   }))
 }
 
-async function searchRapidApiOnce(query: string, region: NewsRegion): Promise<Response> {
+async function searchRapidApiOnce(
+  query: string,
+  region: NewsRegion
+): Promise<Response> {
   const host = process.env.RAPIDAPI_HOST
   const key = process.env.RAPIDAPI_KEY
   if (!host || !key) {
@@ -139,7 +153,10 @@ async function searchRapidApiOnce(query: string, region: NewsRegion): Promise<Re
   })
 }
 
-async function searchRapidApi(query: string, region: NewsRegion): Promise<NewsArticle[]> {
+async function searchRapidApi(
+  query: string,
+  region: NewsRegion
+): Promise<NewsArticle[]> {
   await throttleRapidApi()
   let res = await searchRapidApiOnce(query, region)
 
@@ -177,12 +194,19 @@ async function throttleGdelt() {
 // parser is documented as unreliable with compound boolean expressions, so
 // this filters the plain-keyword search results client-side instead, the
 // same defensive approach isOnTopic() already takes for topical relevance.
-const GDELT_EXPECTED_COUNTRY: Record<NewsRegion, string> = { us: "United States", tw: "Taiwan" }
-const GDELT_EXPECTED_LANGUAGE: Record<NewsRegion, string> = { us: "English", tw: "Chinese" }
+const GDELT_EXPECTED_COUNTRY: Record<NewsRegion, string> = {
+  us: "United States",
+  tw: "Taiwan",
+}
+const GDELT_EXPECTED_LANGUAGE: Record<NewsRegion, string> = {
+  us: "English",
+  tw: "Chinese",
+}
 
 // "20260726T143000Z" -> "2026-07-26T14:30:00Z"
 function parseGdeltDate(seendate: string): string {
-  const iso = `${seendate.slice(0, 4)}-${seendate.slice(4, 6)}-${seendate.slice(6, 8)}` +
+  const iso =
+    `${seendate.slice(0, 4)}-${seendate.slice(4, 6)}-${seendate.slice(6, 8)}` +
     `T${seendate.slice(9, 11)}:${seendate.slice(11, 13)}:${seendate.slice(13, 15)}Z`
   return new Date(iso).toISOString()
 }
@@ -209,7 +233,9 @@ function cleanGdeltTitle(title: string): string {
 // original query untouched if that would empty it out entirely.
 function gdeltSafeQuery(query: string): string {
   const cjk = /[㐀-鿿]/
-  const terms = query.split(/\s+/).filter((term) => term.length >= 4 || cjk.test(term))
+  const terms = query
+    .split(/\s+/)
+    .filter((term) => term.length >= 4 || cjk.test(term))
   return terms.length > 0 ? terms.join(" ") : query
 }
 
@@ -226,7 +252,8 @@ async function searchGdeltOnce(query: string) {
     // status, not even an error code, to requests that don't look like a
     // real client.
     headers: {
-      "User-Agent": "Mozilla/5.0 (compatible; TheTypeWire/1.0; +https://the-type-wire.vercel.app)",
+      "User-Agent":
+        "Mozilla/5.0 (compatible; TheTypeWire/1.0; +https://the-type-wire.vercel.app)",
     },
   })
   // GDELT signals its rate limit two different ways depending on load: a
@@ -244,7 +271,10 @@ async function searchGdeltOnce(query: string) {
   }
 }
 
-async function searchGdelt(query: string, region: NewsRegion): Promise<NewsArticle[]> {
+async function searchGdelt(
+  query: string,
+  region: NewsRegion
+): Promise<NewsArticle[]> {
   await throttleGdelt()
   let parsed = await searchGdeltOnce(query)
 
@@ -259,7 +289,10 @@ async function searchGdelt(query: string, region: NewsRegion): Promise<NewsArtic
   const expectedLanguage = GDELT_EXPECTED_LANGUAGE[region]
 
   return parsed.articles
-    .filter((a) => a.sourcecountry === expectedCountry && a.language === expectedLanguage)
+    .filter(
+      (a) =>
+        a.sourcecountry === expectedCountry && a.language === expectedLanguage
+    )
     .map((a) => ({
       article_id: a.url,
       title: cleanGdeltTitle(a.title),
@@ -273,7 +306,11 @@ async function searchGdelt(query: string, region: NewsRegion): Promise<NewsArtic
     }))
 }
 
-function fetchFromProvider(provider: NewsProvider, query: string, region: NewsRegion) {
+function fetchFromProvider(
+  provider: NewsProvider,
+  query: string,
+  region: NewsRegion
+) {
   if (provider === "currents") return searchCurrents(query, region)
   if (provider === "gdelt") return searchGdelt(query, region)
   return searchRapidApi(query, region)
@@ -342,7 +379,10 @@ const CJK_PATTERN = /[㐀-鿿]/
 function matchesAnyTerm(haystack: string, terms: string[]): boolean {
   return terms.some((term) => {
     if (CJK_PATTERN.test(term)) return haystack.includes(term)
-    const pattern = new RegExp(`(?<![\\p{L}\\p{N}])${escapeRegExp(term)}(?![\\p{L}\\p{N}])`, "iu")
+    const pattern = new RegExp(
+      `(?<![\\p{L}\\p{N}])${escapeRegExp(term)}(?![\\p{L}\\p{N}])`,
+      "iu"
+    )
     return pattern.test(haystack)
   })
 }
@@ -351,9 +391,15 @@ function matchesAnyTerm(haystack: string, terms: string[]): boolean {
 // surface articles that never mention the query at all (wrong section tag
 // upstream, fuzzy relevance scoring, etc). Require at least one query term
 // to literally appear in the title or snippet before it reaches triage.
-function isOnTopic(article: NewsArticle, category: NewsCategory, query: string): boolean {
+function isOnTopic(
+  article: NewsArticle,
+  category: NewsCategory,
+  query: string
+): boolean {
   const haystack = `${article.title} ${article.snippet ?? ""}`
-  const terms = `${query} ${RELEVANCE_TERM_ALIASES[category] ?? ""}`.split(/\s+/).filter(Boolean)
+  const terms = `${query} ${RELEVANCE_TERM_ALIASES[category] ?? ""}`
+    .split(/\s+/)
+    .filter(Boolean)
   return matchesAnyTerm(haystack, terms)
 }
 
@@ -395,22 +441,26 @@ function isSportsNews(article: NewsArticle): boolean {
 
 export async function fetchTopArticles(
   category: NewsCategory,
-  region: NewsRegion,
+  region: NewsRegion
 ): Promise<NewsArticle[]> {
   const query = CATEGORY_QUERIES[region][category]
   const providers = activeProviders()
 
   const results = await Promise.allSettled(
-    providers.map((provider) => fetchFromProvider(provider, query, region)),
+    providers.map((provider) => fetchFromProvider(provider, query, region))
   )
 
-  const articles = results.flatMap((r) => (r.status === "fulfilled" ? r.value : []))
+  const articles = results.flatMap((r) =>
+    r.status === "fulfilled" ? r.value : []
+  )
 
   if (articles.length === 0) {
     const firstError = results.find(
-      (r): r is PromiseRejectedResult => r.status === "rejected",
+      (r): r is PromiseRejectedResult => r.status === "rejected"
     )?.reason
-    throw firstError instanceof Error ? firstError : new Error("All news providers returned zero articles")
+    throw firstError instanceof Error
+      ? firstError
+      : new Error("All news providers returned zero articles")
   }
 
   return dedupeArticles(articles)

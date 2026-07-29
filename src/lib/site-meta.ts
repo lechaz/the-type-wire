@@ -19,7 +19,9 @@ export function buildMetaTags({
   description: string
 }) {
   const ogTitle = pageTitle ?? SITE_NAME
-  const documentTitle = pageTitle ? `${pageTitle} | ${SITE_NAME}` : `${SITE_NAME} | ${description}`
+  const documentTitle = pageTitle
+    ? `${pageTitle} | ${SITE_NAME}`
+    : `${SITE_NAME} | ${description}`
 
   return [
     { title: documentTitle },

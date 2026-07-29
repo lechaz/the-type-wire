@@ -3,10 +3,15 @@ import { z } from "zod"
 import { getDb } from "@/server/db"
 import { fetchTopArticles } from "@/server/news/client"
 import { generateStructured } from "@/server/gemini/client"
-import { eventTriageJsonSchema, EventTriageResultSchema } from "@/server/gemini/schemas"
+import {
+  eventTriageJsonSchema,
+  EventTriageResultSchema,
+} from "@/server/gemini/schemas"
 import { resolveCanonicalMbti } from "@/server/gemini/mbti-consistency"
-import { NEWS_CATEGORIES, type NewsCategory } from "@/lib/mbti"
-import { NEWS_REGIONS, REGION_CONFIG, cacheDateFor, type NewsRegion } from "@/lib/region"
+import { NEWS_CATEGORIES } from "@/lib/mbti"
+import type { NewsCategory } from "@/lib/mbti"
+import { NEWS_REGIONS, REGION_CONFIG, cacheDateFor } from "@/lib/region"
+import type { NewsRegion } from "@/lib/region"
 import type { NewsArticle } from "@/server/news/types"
 import type { MbtiTypeRow } from "@/server/db-types"
 
@@ -37,29 +42,44 @@ export type EventsStatus = "ok" | "no_new" | "degraded"
 // search step can't tell the difference; triage is where a topical read
 // actually happens, so it needs to be told what desk it's curating for.
 const CATEGORY_FIT: Record<NewsCategory, string> = {
-  ai: "Centers on artificial intelligence itself — an AI company, product, " +
+  ai:
+    "Centers on artificial intelligence itself — an AI company, product, " +
     "policy, or research development — not a story that merely name-drops AI.",
-  finance: "Centers on markets, monetary policy, or corporate finance — not a " +
+  finance:
+    "Centers on markets, monetary policy, or corporate finance — not a " +
     "story that just mentions a dollar figure or company name in passing.",
-  politics: "Centers on domestic governance, elections, or policy-making — not " +
+  politics:
+    "Centers on domestic governance, elections, or policy-making — not " +
     "a foreign-affairs story (that's International) and not a human-interest " +
     "piece that merely involves a politician.",
-  international: "Centers on cross-border affairs — foreign governments, " +
+  international:
+    "Centers on cross-border affairs — foreign governments, " +
     "diplomacy, global conflicts, world events. Not a domestic story that " +
-    "merely uses \"international\" as a scale descriptor — e.g. a domestic " +
+    'merely uses "international" as a scale descriptor — e.g. a domestic ' +
     "tourism target, a local event with international guests, a company's " +
-    "\"global\" branding.",
-  technology: "Centers on a tech product, company, research, or industry " +
+    '"global" branding.',
+  technology:
+    "Centers on a tech product, company, research, or industry " +
     "development — not a story that merely name-drops a tech term.",
 }
 
-function triagePrompt(articles: NewsArticle[], category: NewsCategory, region: NewsRegion) {
+function triagePrompt(
+  articles: NewsArticle[],
+  category: NewsCategory,
+  region: NewsRegion
+) {
   const list = articles
-    .map((a, i) => `${i}. "${a.title}" (${a.source_name})${a.snippet ? ` — ${a.snippet}` : ""}`)
+    .map(
+      (a, i) =>
+        `${i}. "${a.title}" (${a.source_name})${a.snippet ? ` — ${a.snippet}` : ""}`
+    )
     .join("\n")
   const { promptLanguage, label: editionLabel } = REGION_CONFIG[region]
   const languageLine = promptLanguage
-    ? [`Write every generated text field (name, role) in ${promptLanguage}.`, ""]
+    ? [
+        `Write every generated text field (name, role) in ${promptLanguage}.`,
+        "",
+      ]
     : []
 
   const criteria = [
@@ -84,7 +104,7 @@ function triagePrompt(articles: NewsArticle[], category: NewsCategory, region: N
     criteria.push(
       `It's substantively about ${editionLabel} — not a wire-service pickup of ` +
         `foreign news that a ${editionLabel} outlet merely carried or translated ` +
-        "(that belongs on the International desk, not here).",
+        "(that belongs on the International desk, not here)."
     )
   }
 
@@ -95,7 +115,7 @@ function triagePrompt(articles: NewsArticle[], category: NewsCategory, region: N
     ...criteria.map((c, i) => `${i + 1}. ${c}`),
     "",
     "Reject: routine statements or interviews with no real decision in them,",
-    "minor personnel notes, generic \"X talks about Y\" coverage, opinion pieces,",
+    'minor personnel notes, generic "X talks about Y" coverage, opinion pieces,',
     "investment-tip listicles, roundups, and how-to content — even if a named",
     "individual is technically mentioned.",
     "",
@@ -119,7 +139,7 @@ function triagePrompt(articles: NewsArticle[], category: NewsCategory, region: N
     "their real public behavior.",
     "",
     "Some titles below were scraped straight from a page's raw <title> tag and carry",
-    "trailing site chrome (a site/section name tacked on with \" | \" or \" - \"). Set",
+    'trailing site chrome (a site/section name tacked on with " | " or " - "). Set',
     "title_trim_at to cut that off — a character count from the start of the title,",
     "not replacement text. This can only shorten the title, never reword any part of",
     "it; set it to the title's full length when there's no chrome to drop.",
@@ -161,7 +181,11 @@ function applyTitleTrim(title: string, trimAtHint: number | undefined): string {
     const idx = window.indexOf(sep)
     if (idx === -1) continue
     const candidate = windowStart + idx
-    if (cut === -1 || Math.abs(candidate - trimAtHint) < Math.abs(cut - trimAtHint)) cut = candidate
+    if (
+      cut === -1 ||
+      Math.abs(candidate - trimAtHint) < Math.abs(cut - trimAtHint)
+    )
+      cut = candidate
   }
   if (cut === -1) return title
 
@@ -173,11 +197,13 @@ async function loadCachedEvents(
   db: ReturnType<typeof getDb>,
   category: NewsCategory,
   region: NewsRegion,
-  cacheDate?: string,
+  cacheDate?: string
 ) {
   let query = db
     .from("events")
-    .select("id, category, region, headline, source_name, source_url, published_at, summary, cache_date")
+    .select(
+      "id, category, region, headline, source_name, source_url, published_at, summary, cache_date"
+    )
     .eq("category", category)
     .eq("region", region)
   if (cacheDate) query = query.eq("cache_date", cacheDate)
@@ -204,7 +230,10 @@ async function loadCachedEvents(
     }
   }
 
-  return events.map((e) => ({ ...e, primaryMaker: primaryByEvent.get(e.id) ?? null }))
+  return events.map((e) => ({
+    ...e,
+    primaryMaker: primaryByEvent.get(e.id) ?? null,
+  }))
 }
 
 // Whether to show the "no new dispatches" note. Events are ordered
@@ -218,7 +247,7 @@ async function loadCachedEvents(
 // additional, would wrongly flag its own today-dated content as stale.
 function freshnessStatus(
   events: { cache_date: string }[],
-  todayCacheDate: string,
+  todayCacheDate: string
 ): "ok" | "no_new" {
   if (events.length === 0) return "ok"
   return events[0].cache_date === todayCacheDate ? "ok" : "no_new"
@@ -233,7 +262,8 @@ export const getEvents = createServerFn({ method: "GET" })
 
     if (!forceRefresh) {
       const cached = await loadCachedEvents(db, category, region, cacheDate)
-      if (cached.length > 0) return { events: cached, status: freshnessStatus(cached, cacheDate) }
+      if (cached.length > 0)
+        return { events: cached, status: freshnessStatus(cached, cacheDate) }
     }
 
     try {
@@ -246,7 +276,9 @@ export const getEvents = createServerFn({ method: "GET" })
               schema: eventTriageJsonSchema(region),
               parse: (raw) => EventTriageResultSchema.parse(raw),
             })
-          ).items.filter((t) => t.keep && t.primary_maker_name && t.mbti && articles[t.index])
+          ).items.filter(
+            (t) => t.keep && t.primary_maker_name && t.mbti && articles[t.index]
+          )
         : []
 
       // An empty kept set means either the fetch itself came back dry (a
@@ -257,7 +289,10 @@ export const getEvents = createServerFn({ method: "GET" })
       // where cached articles used to be.
       if (kept.length === 0) {
         const fallback = await loadCachedEvents(db, category, region)
-        return { events: fallback, status: freshnessStatus(fallback, cacheDate) }
+        return {
+          events: fallback,
+          status: freshnessStatus(fallback, cacheDate),
+        }
       }
 
       if (forceRefresh) {
@@ -274,7 +309,9 @@ export const getEvents = createServerFn({ method: "GET" })
         // Also deliberately done AFTER the fetch/triage succeed, not before,
         // so a live-fetch failure can't wipe out a working cache.
         const keptUrls = kept.map((t) => articles[t.index].link)
-        const urlList = keptUrls.map((u) => `"${u.replace(/"/g, '\\"')}"`).join(",")
+        const urlList = keptUrls
+          .map((u) => `"${u.replace(/"/g, '\\"')}"`)
+          .join(",")
         const { error: clearError } = await db
           .from("events")
           .delete()
@@ -302,7 +339,9 @@ export const getEvents = createServerFn({ method: "GET" })
       const { data: upserted, error: upsertError } = await db
         .from("events")
         .upsert(rows, { onConflict: "region,category,source_url,cache_date" })
-        .select("id, category, region, headline, source_name, source_url, published_at, summary, cache_date")
+        .select(
+          "id, category, region, headline, source_name, source_url, published_at, summary, cache_date"
+        )
       if (upsertError) throw new Error(upsertError.message)
 
       const eventIds = (upserted ?? []).map((e) => e.id)
@@ -311,7 +350,9 @@ export const getEvents = createServerFn({ method: "GET" })
         .select("event_id")
         .in("event_id", eventIds)
       if (existingError) throw new Error(existingError.message)
-      const alreadySeeded = new Set((existingMakers ?? []).map((m) => m.event_id))
+      const alreadySeeded = new Set(
+        (existingMakers ?? []).map((m) => m.event_id)
+      )
 
       // Match triage results back to their upserted row by source_url — upsert
       // return order is not guaranteed to match input order.
@@ -326,7 +367,7 @@ export const getEvents = createServerFn({ method: "GET" })
         db,
         kept
           .filter((t) => t.primary_maker_name && t.mbti)
-          .map((t) => ({ name: t.primary_maker_name!, mbti: t.mbti! })),
+          .map((t) => ({ name: t.primary_maker_name!, mbti: t.mbti! }))
       )
 
       const seedRows = (upserted ?? [])
@@ -348,7 +389,9 @@ export const getEvents = createServerFn({ method: "GET" })
         .filter((row) => row !== null)
 
       if (seedRows.length > 0) {
-        const { error: seedError } = await db.from("decision_makers").insert(seedRows)
+        const { error: seedError } = await db
+          .from("decision_makers")
+          .insert(seedRows)
         if (seedError) throw new Error(seedError.message)
       }
 
@@ -364,7 +407,10 @@ export const getEvents = createServerFn({ method: "GET" })
       // there's no cache at all for this category+region (e.g. it's never
       // been seeded), surface an "unavailable" empty state instead of
       // throwing a raw error to the page — there's simply nothing to show.
-      console.error(`[getEvents] live fetch failed for ${category}/${region}, serving cache:`, err)
+      console.error(
+        `[getEvents] live fetch failed for ${category}/${region}, serving cache:`,
+        err
+      )
       const fallback = await loadCachedEvents(db, category, region)
       return { events: fallback, status: "degraded" as const }
     }

@@ -1,15 +1,27 @@
 import { Link } from "@tanstack/react-router"
 import { useLayoutEffect, useRef, useState } from "react"
-import { NEWS_CATEGORIES, CATEGORY_LABELS, type NewsCategory } from "@/lib/mbti"
-import { monoLabelClass, type NewsRegion } from "@/lib/region"
+import { NEWS_CATEGORIES, CATEGORY_LABELS } from "@/lib/mbti"
+import type { NewsCategory } from "@/lib/mbti"
+import { monoLabelClass } from "@/lib/region"
+import type { NewsRegion } from "@/lib/region"
 import { cn } from "@/lib/utils"
 
-export function CategoryTabs({ active, region }: { active: NewsCategory; region: NewsRegion }) {
+export function CategoryTabs({
+  active,
+  region,
+}: {
+  active: NewsCategory
+  region: NewsRegion
+}) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const tabRefs = useRef<Partial<Record<NewsCategory, HTMLAnchorElement | null>>>({})
-  const [indicator, setIndicator] = useState<{ left: number; width: number; top: number } | null>(
-    null,
-  )
+  const tabRefs = useRef<
+    Partial<Record<NewsCategory, HTMLAnchorElement | null>>
+  >({})
+  const [indicator, setIndicator] = useState<{
+    left: number
+    width: number
+    top: number
+  } | null>(null)
 
   useLayoutEffect(() => {
     const container = containerRef.current
@@ -58,7 +70,11 @@ export function CategoryTabs({ active, region }: { active: NewsCategory; region:
       {indicator && (
         <div
           className="absolute h-0.5 bg-wire-red transition-[left,width,top] duration-200 ease-[var(--ease-out-strong)]"
-          style={{ left: indicator.left, width: indicator.width, top: indicator.top }}
+          style={{
+            left: indicator.left,
+            width: indicator.width,
+            top: indicator.top,
+          }}
         />
       )}
       {NEWS_CATEGORIES.map((c) => (
@@ -68,11 +84,17 @@ export function CategoryTabs({ active, region }: { active: NewsCategory; region:
             tabRefs.current[c] = node
           }}
           to="/"
-          search={(prev) => ({ ...prev, category: c, region: prev.region ?? region })}
+          search={(prev) => ({
+            ...prev,
+            category: c,
+            region: prev.region ?? region,
+          })}
           className={cn(
-            "relative z-10 pb-2 font-mono text-xs font-bold transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+            "relative z-10 pb-2 font-mono text-xs font-bold transition-colors duration-200 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
             monoLabelClass(region),
-            active === c ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+            active === c
+              ? "text-foreground"
+              : "text-muted-foreground hover:text-foreground"
           )}
         >
           {CATEGORY_LABELS[region][c]}

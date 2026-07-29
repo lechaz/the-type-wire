@@ -1,10 +1,22 @@
 import type { NewsRegion } from "./region"
 
 export const MBTI_TYPES = [
-  "INTJ", "INTP", "ENTJ", "ENTP",
-  "INFJ", "INFP", "ENFJ", "ENFP",
-  "ISTJ", "ISFJ", "ESTJ", "ESFJ",
-  "ISTP", "ISFP", "ESTP", "ESFP",
+  "INTJ",
+  "INTP",
+  "ENTJ",
+  "ENTP",
+  "INFJ",
+  "INFP",
+  "ENFJ",
+  "ENFP",
+  "ISTJ",
+  "ISFJ",
+  "ESTJ",
+  "ESFJ",
+  "ISTP",
+  "ISFP",
+  "ESTP",
+  "ESFP",
 ] as const
 
 export type MbtiType = (typeof MBTI_TYPES)[number]
@@ -28,7 +40,10 @@ export const NEWS_CATEGORIES = [
 
 export type NewsCategory = (typeof NEWS_CATEGORIES)[number]
 
-export const CATEGORY_LABELS: Record<NewsRegion, Record<NewsCategory, string>> = {
+export const CATEGORY_LABELS: Record<
+  NewsRegion,
+  Record<NewsCategory, string>
+> = {
   us: {
     ai: "AI",
     finance: "Finance",

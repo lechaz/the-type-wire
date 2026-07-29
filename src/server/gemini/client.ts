@@ -63,7 +63,7 @@ export async function generateStructured<T>(params: {
       return await callOnce(params)
     } catch (retryErr) {
       throw new GeminiStructuredOutputError(
-        `Gemini structured output failed twice: ${String(retryErr ?? err)}`,
+        `Gemini structured output failed twice: ${String(retryErr ?? err)}`
       )
     }
   }

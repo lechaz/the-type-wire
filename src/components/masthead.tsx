@@ -7,7 +7,9 @@ import { cn } from "@/lib/utils"
 const EDITION_START = new Date("2026-01-01T00:00:00Z")
 
 function editionNumber(now: Date) {
-  const days = Math.floor((now.getTime() - EDITION_START.getTime()) / 86_400_000)
+  const days = Math.floor(
+    (now.getTime() - EDITION_START.getTime()) / 86_400_000
+  )
   return Math.max(1, days + 1)
 }
 
@@ -42,13 +44,18 @@ export function Masthead() {
             The Type Wire
           </p>
         </Link>
-        <p className={cn("mt-1 font-mono text-[11px] text-muted-foreground", monoLabelClass(region))}>
+        <p
+          className={cn(
+            "mt-1 font-mono text-[11px] text-muted-foreground",
+            monoLabelClass(region)
+          )}
+        >
           {t.tagline}
         </p>
         <p
           className={cn(
             "-mx-6 mt-3 border-t border-border px-6 pt-2 font-mono text-[11px] text-muted-foreground",
-            monoLabelClass(region),
+            monoLabelClass(region)
           )}
         >
           {dateline} · {t.edition(editionNumber(now))}
@@ -59,13 +66,16 @@ export function Masthead() {
             <Link
               key={r}
               to="/"
-              search={(prev) => ({ category: prev.category ?? "ai", region: r })}
+              search={(prev) => ({
+                category: prev.category ?? "ai",
+                region: r,
+              })}
               className={cn(
                 "px-1.5 py-0.5 transition-colors",
                 monoLabelClass(r),
                 region === r
                   ? "bg-foreground text-background"
-                  : "text-muted-foreground hover:text-foreground",
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               {REGION_CONFIG[r].label}
@@ -77,7 +87,12 @@ export function Masthead() {
           height is reserved on every route — otherwise the page content
           below jumps up/down as you navigate between the event page and
           everywhere else. */}
-      <div className={cn("flex justify-start px-6 pt-6", !eventRoute && "invisible")}>
+      <div
+        className={cn(
+          "flex justify-start px-6 pt-6",
+          !eventRoute && "invisible"
+        )}
+      >
         <Link
           to="/"
           search={{ category: eventRoute?.category ?? "ai", region }}
@@ -85,7 +100,7 @@ export function Masthead() {
           aria-hidden={!eventRoute}
           className={cn(
             "inline-flex items-center gap-1.5 font-mono text-xs font-bold text-foreground underline underline-offset-4 hover:text-wire-red",
-            monoLabelClass(region),
+            monoLabelClass(region)
           )}
         >
           {t.backToWire}

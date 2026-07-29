@@ -1,4 +1,5 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js"
+import { createClient } from "@supabase/supabase-js"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Database } from "@/server/db-types"
 
 // Service-role client — server-only. Bypasses RLS, so it must never be
@@ -13,7 +14,7 @@ export function getDb() {
 
   if (!url || !key) {
     throw new Error(
-      "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Check .env.local.",
+      "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Check .env.local."
     )
   }
 

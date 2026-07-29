@@ -54,15 +54,20 @@ type MatchLike = {
   loaderData?: unknown
 }
 
-export function pickRegionFromMatches(matches: readonly MatchLike[]): NewsRegion {
+export function pickRegionFromMatches(
+  matches: readonly MatchLike[]
+): NewsRegion {
   const eventMatch = matches.find((m) => m.routeId === "/event/$eventId/")
   const eventRegion = (
-    eventMatch?.loaderData as { detail?: { event?: { region?: NewsRegion } } } | undefined
+    eventMatch?.loaderData as
+      { detail?: { event?: { region?: NewsRegion } } } | undefined
   )?.detail?.event?.region
   if (eventRegion) return eventRegion
 
   const homeMatch = matches.find((m) => m.routeId === "/")
-  const searchRegion = (homeMatch?.search as { region?: NewsRegion } | undefined)?.region
+  const searchRegion = (
+    homeMatch?.search as { region?: NewsRegion } | undefined
+  )?.region
   return searchRegion ?? "us"
 }
 

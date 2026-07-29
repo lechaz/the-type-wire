@@ -1,6 +1,7 @@
 import { z } from "zod"
 import { MBTI_TYPES } from "@/lib/mbti"
-import { REGION_CONFIG, type NewsRegion } from "@/lib/region"
+import { REGION_CONFIG } from "@/lib/region"
+import type { NewsRegion } from "@/lib/region"
 
 // Gemini reads both the natural-language prompt AND each JSON-schema
 // property `description` as instructions — a language directive added to
@@ -40,27 +41,41 @@ export function eventTriageJsonSchema(region: NewsRegion) {
         items: {
           type: "object",
           properties: {
-            index: { type: "integer", description: "0-based index into the input list." },
+            index: {
+              type: "integer",
+              description: "0-based index into the input list.",
+            },
             keep: {
               type: "boolean",
               description:
                 "true only if a real named individual is behind it AND it's a genuine, " +
                 "consequential decision or move with real stakes. False for routine " +
-                "statements, minor personnel notes, generic \"X talks about Y\" coverage, " +
+                'statements, minor personnel notes, generic "X talks about Y" coverage, ' +
                 "opinion pieces, investment-tip listicles, and roundups, even if a named " +
                 "individual is technically mentioned. An empty result is a legitimate " +
                 "outcome; do not keep a weak item just to avoid one.",
             },
-            primary_maker_name: { type: "string", description: `Their real name.${lang}` },
-            primary_maker_role: { type: "string", description: `Their role in this story.${lang}` },
+            primary_maker_name: {
+              type: "string",
+              description: `Their real name.${lang}`,
+            },
+            primary_maker_role: {
+              type: "string",
+              description: `Their role in this story.${lang}`,
+            },
             mbti: { type: "string", enum: MBTI_TYPES as unknown as string[] },
-            confidence: { type: "integer", minimum: 0, maximum: 100, description: CONFIDENCE_RUBRIC },
+            confidence: {
+              type: "integer",
+              minimum: 0,
+              maximum: 100,
+              description: CONFIDENCE_RUBRIC,
+            },
             title_trim_at: {
               type: "integer",
               description:
                 "Character count to keep from the START of this item's title, dropping " +
                 "ONLY trailing site chrome scraped along with it — a site/section name " +
-                "suffix like \" | Section | Site Name\" or \" - Category\". Set this to the " +
+                'suffix like " | Section | Site Name" or " - Category". Set this to the ' +
                 "title's full character length (i.e. no trim) unless it clearly has such " +
                 "chrome tacked on. This is a cut point, not a rewrite: never reword, " +
                 "translate, or paraphrase any part of the title, and never trim real " +
@@ -85,7 +100,7 @@ export const EventTriageResultSchema = z.object({
       mbti: z.enum(MBTI_TYPES).optional(),
       confidence: z.number().int().min(0).max(100).optional(),
       title_trim_at: z.number().int().optional(),
-    }),
+    })
   ),
 })
 
@@ -114,13 +129,21 @@ export function ingestJsonSchema(region: NewsRegion) {
           type: "object",
           properties: {
             name: { type: "string" },
-            role: { type: "string", description: `Their role in this event.${lang}` },
+            role: {
+              type: "string",
+              description: `Their role in this event.${lang}`,
+            },
             mbti: { type: "string", enum: MBTI_TYPES as unknown as string[] },
             reasoning: {
               type: "string",
               description: `1-2 sentences grounding the MBTI call in public behavior.${lang}`,
             },
-            confidence: { type: "integer", minimum: 0, maximum: 100, description: CONFIDENCE_RUBRIC },
+            confidence: {
+              type: "integer",
+              minimum: 0,
+              maximum: 100,
+              description: CONFIDENCE_RUBRIC,
+            },
           },
           required: ["name", "role", "mbti", "reasoning", "confidence"],
         },
@@ -140,7 +163,7 @@ export const IngestResultSchema = z.object({
         mbti: z.enum(MBTI_TYPES),
         reasoning: z.string(),
         confidence: z.number().int().min(0).max(100),
-      }),
+      })
     )
     .min(2)
     .max(5),
@@ -176,7 +199,10 @@ export function timelineJsonSchema(region: NewsRegion) {
           type: "object",
           properties: {
             day_offset: { type: "integer", minimum: 0, maximum: 30 },
-            headline: { type: "string", description: `Short headline for this event.${lang}` },
+            headline: {
+              type: "string",
+              description: `Short headline for this event.${lang}`,
+            },
             summary: {
               type: "string",
               description: `1-2 sentence description of the predicted event.${lang}`,
@@ -186,7 +212,12 @@ export function timelineJsonSchema(region: NewsRegion) {
               type: "string",
               description: `How the drivers' MBTI traits shape this outcome.${lang}`,
             },
-            confidence: { type: "integer", minimum: 0, maximum: 100, description: CONFIDENCE_RUBRIC },
+            confidence: {
+              type: "integer",
+              minimum: 0,
+              maximum: 100,
+              description: CONFIDENCE_RUBRIC,
+            },
           },
           required: [
             "day_offset",
@@ -215,7 +246,7 @@ export const TimelineResultSchema = z.object({
         driver_names: z.array(z.string()),
         trait_reasoning: z.string(),
         confidence: z.number().int().min(0).max(100),
-      }),
+      })
     )
     .min(6)
     .max(10),
