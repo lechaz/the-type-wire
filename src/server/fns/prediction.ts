@@ -38,8 +38,7 @@ async function loadEventAndMakers(
     .select("id, headline, summary, region")
     .eq("id", eventId)
     .single()
-  if (eventError || !event)
-    throw new Error(eventError?.message ?? "Event not found")
+  if (eventError) throw new Error(eventError.message)
 
   const { data: makers, error: makersError } = await db
     .from("decision_makers")
@@ -47,7 +46,7 @@ async function loadEventAndMakers(
     .eq("event_id", eventId)
     .order("sort_order", { ascending: true })
   if (makersError) throw new Error(makersError.message)
-  if (!makers || makers.length === 0) {
+  if (makers.length === 0) {
     throw new Error(
       "Decision makers not found — open the event detail view first."
     )
@@ -113,8 +112,7 @@ async function insertTimeline(params: {
     )
     .single()
 
-  if (predictionError || !prediction)
-    throw new Error(predictionError?.message ?? "Insert failed")
+  if (predictionError) throw new Error(predictionError.message)
 
   const today = new Date()
   const nodeRows = timeline.nodes
@@ -144,7 +142,7 @@ async function insertTimeline(params: {
 
   if (nodesError) throw new Error(nodesError.message)
 
-  return { prediction, nodes: nodes ?? [] }
+  return { prediction, nodes }
 }
 
 const GetPredictionInput = z.object({ eventId: z.string().uuid() })
@@ -173,7 +171,7 @@ export const getPrediction = createServerFn({ method: "GET" })
         .eq("prediction_id", existing.id)
         .order("sort_order", { ascending: true })
       if (nodesError) throw new Error(nodesError.message)
-      return { prediction: existing, nodes: nodes ?? [] }
+      return { prediction: existing, nodes }
     }
 
     const { event, makers } = await loadEventAndMakers(db, data.eventId)
@@ -253,8 +251,7 @@ export const runScenario = createServerFn({ method: "POST" })
       )
       .single()
 
-    if (scenarioError || !scenario)
-      throw new Error(scenarioError?.message ?? "Insert failed")
+    if (scenarioError) throw new Error(scenarioError.message)
 
     return { scenario, prediction, nodes }
   })

@@ -19,6 +19,6 @@ export function useEventRouteData() {
   const eventMatch = matches.find((m) => m.routeId === "/event/$eventId/")
   const event = (eventMatch?.loaderData as EventLoaderData | undefined)?.detail
     ?.event
-  if (!event?.region || !event?.category) return null
+  if (!event?.region || !event.category) return null
   return { category: event.category, region: event.region }
 }

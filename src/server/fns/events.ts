@@ -213,7 +213,7 @@ async function loadCachedEvents(
     .order("published_at", { ascending: false })
     .limit(5)
   if (error) throw new Error(error.message)
-  if (!events || events.length === 0) return []
+  if (events.length === 0) return []
 
   const ids = events.map((e) => e.id)
   const { data: makers, error: makersError } = await db
@@ -224,7 +224,7 @@ async function loadCachedEvents(
   if (makersError) throw new Error(makersError.message)
 
   const primaryByEvent = new Map<string, { name: string; mbti: MbtiTypeRow }>()
-  for (const m of makers ?? []) {
+  for (const m of makers) {
     if (!primaryByEvent.has(m.event_id)) {
       primaryByEvent.set(m.event_id, { name: m.name, mbti: m.mbti })
     }
@@ -344,15 +344,13 @@ export const getEvents = createServerFn({ method: "GET" })
         )
       if (upsertError) throw new Error(upsertError.message)
 
-      const eventIds = (upserted ?? []).map((e) => e.id)
+      const eventIds = upserted.map((e) => e.id)
       const { data: existingMakers, error: existingError } = await db
         .from("decision_makers")
         .select("event_id")
         .in("event_id", eventIds)
       if (existingError) throw new Error(existingError.message)
-      const alreadySeeded = new Set(
-        (existingMakers ?? []).map((m) => m.event_id)
-      )
+      const alreadySeeded = new Set(existingMakers.map((m) => m.event_id))
 
       // Match triage results back to their upserted row by source_url — upsert
       // return order is not guaranteed to match input order.
@@ -370,7 +368,7 @@ export const getEvents = createServerFn({ method: "GET" })
           .map((t) => ({ name: t.primary_maker_name!, mbti: t.mbti! }))
       )
 
-      const seedRows = (upserted ?? [])
+      const seedRows = upserted
         .filter((event) => !alreadySeeded.has(event.id))
         .map((event) => {
           const t = triageByUrl.get(event.source_url)

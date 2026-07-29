@@ -75,7 +75,7 @@ export const getEventDetail = createServerFn({ method: "GET" })
       .eq("id", data.eventId)
       .single()
 
-    if (eventError || !event) throw new Error(EVENT_NOT_FOUND)
+    if (eventError) throw new Error(EVENT_NOT_FOUND)
 
     const { data: existingMakers, error: makersError } = await db
       .from("decision_makers")
@@ -87,7 +87,7 @@ export const getEventDetail = createServerFn({ method: "GET" })
     // A single row here means it's just the landing-page primary-maker seed
     // (see getEvents) — expand to the full 2-5 roster instead of treating
     // it as already ingested.
-    if (existingMakers && existingMakers.length > 1) {
+    if (existingMakers.length > 1) {
       return { event, decisionMakers: existingMakers }
     }
     // Capture the landing-page seed's type before it's cleared below — its
@@ -95,7 +95,7 @@ export const getEventDetail = createServerFn({ method: "GET" })
     // lookup after Gemini runs, but the primary maker's already-established
     // type still needs to carry forward into the full roster.
     const priorSeed =
-      existingMakers && existingMakers.length === 1
+      existingMakers.length === 1
         ? { name: existingMakers[0].name.trim(), mbti: existingMakers[0].mbti }
         : null
 
@@ -167,6 +167,6 @@ export const getEventDetail = createServerFn({ method: "GET" })
 
     return {
       event: { ...event, summary: ingest.event_summary },
-      decisionMakers: insertedMakers ?? [],
+      decisionMakers: insertedMakers,
     }
   })

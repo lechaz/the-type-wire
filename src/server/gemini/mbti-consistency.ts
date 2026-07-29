@@ -31,7 +31,7 @@ export async function resolveCanonicalMbti(
   if (nameError) throw new Error(nameError.message)
 
   const canonical = new Map<string, MbtiTypeRow>()
-  for (const m of nameMatches ?? []) {
+  for (const m of nameMatches) {
     if (!canonical.has(m.name)) canonical.set(m.name, m.mbti)
   }
   return canonical

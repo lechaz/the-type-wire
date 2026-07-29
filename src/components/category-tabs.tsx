@@ -46,7 +46,7 @@ export function CategoryTabs({
     // font-mono (Courier Prime / Noto Sans TC) loads async — if the first
     // paint measures tab widths before it swaps in, the indicator locks
     // onto stale fallback-font coordinates.
-    document.fonts?.ready.then(measure)
+    document.fonts.ready.then(measure)
 
     // Anything that reflows the tab row (wrap toggling on/off, a sibling
     // like the Refresh button changing width, viewport resize) has to

@@ -67,76 +67,82 @@ export function MbtiCodex({ region }: { region: NewsRegion }) {
             {FAMILY_LABEL[family]}
           </p>
           <div className="flex flex-col gap-2">
-            {MBTI_TYPES.filter((t) => mbtiFamily(t) === family).map((type) => {
-              const info = descriptions[type]
-              return (
-                <div
-                  key={type}
-                  className={cn(
-                    "flex items-start gap-3 border p-2",
-                    FAMILY_BORDER[family]
-                  )}
-                >
-                  <MbtiFigurine type={type} size={56} className="shrink-0" />
-                  <div className="min-w-0">
-                    <p className="flex items-baseline gap-1.5">
-                      <span className="font-mono text-xs font-bold">
-                        {type}
-                      </span>
-                      <span className="font-display text-sm font-bold text-foreground">
-                        {info.title}
-                      </span>
-                    </p>
-                    <p className="font-mono text-[10px] tracking-wide text-muted-foreground">
-                      {functionsFor(type, region).map((f, i) => {
-                        const key = `${type}-${f.role}`
-                        return (
-                          <span key={f.role}>
-                            {i > 0 && " · "}
-                            <Tooltip
-                              open={openKey === key}
-                              onOpenChange={(open) =>
-                                // See prediction-timeline.tsx's identical guard: a
-                                // stale close from the previously-hovered item can
-                                // arrive after this one's open and must not clobber it.
-                                setOpenKey((current) =>
-                                  open ? key : current === key ? null : current
-                                )
-                              }
-                            >
-                              <TooltipTrigger
-                                render={
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setOpenKey((k) =>
-                                        k === key ? null : key
-                                      )
-                                    }
-                                    className="cursor-help font-mono text-[10px] tracking-wide whitespace-nowrap text-muted-foreground underline decoration-dotted underline-offset-2 focus-visible:outline-none"
-                                  />
+            {MBTI_TYPES.filter((type) => mbtiFamily(type) === family).map(
+              (type) => {
+                const info = descriptions[type]
+                return (
+                  <div
+                    key={type}
+                    className={cn(
+                      "flex items-start gap-3 border p-2",
+                      FAMILY_BORDER[family]
+                    )}
+                  >
+                    <MbtiFigurine type={type} size={56} className="shrink-0" />
+                    <div className="min-w-0">
+                      <p className="flex items-baseline gap-1.5">
+                        <span className="font-mono text-xs font-bold">
+                          {type}
+                        </span>
+                        <span className="font-display text-sm font-bold text-foreground">
+                          {info.title}
+                        </span>
+                      </p>
+                      <p className="font-mono text-[10px] tracking-wide text-muted-foreground">
+                        {functionsFor(type, region).map((f, i) => {
+                          const key = `${type}-${f.role}`
+                          return (
+                            <span key={f.role}>
+                              {i > 0 && " · "}
+                              <Tooltip
+                                open={openKey === key}
+                                onOpenChange={(open) =>
+                                  // See prediction-timeline.tsx's identical guard: a
+                                  // stale close from the previously-hovered item can
+                                  // arrive after this one's open and must not clobber it.
+                                  setOpenKey((current) =>
+                                    open
+                                      ? key
+                                      : current === key
+                                        ? null
+                                        : current
+                                  )
                                 }
                               >
-                                {f.code} ({ROLE_ABBR[f.role]})
-                              </TooltipTrigger>
-                              <TooltipContent
-                                className="max-w-64 rounded-none"
-                                sideOffset={6}
-                              >
-                                {f.code} · {ROLE_LABEL[f.role]}: {f.name}
-                              </TooltipContent>
-                            </Tooltip>
-                          </span>
-                        )
-                      })}
-                    </p>
-                    <p className="mt-1 font-serif text-xs text-muted-foreground">
-                      {info.blurb}
-                    </p>
+                                <TooltipTrigger
+                                  render={
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setOpenKey((k) =>
+                                          k === key ? null : key
+                                        )
+                                      }
+                                      className="cursor-help font-mono text-[10px] tracking-wide whitespace-nowrap text-muted-foreground underline decoration-dotted underline-offset-2 focus-visible:outline-none"
+                                    />
+                                  }
+                                >
+                                  {f.code} ({ROLE_ABBR[f.role]})
+                                </TooltipTrigger>
+                                <TooltipContent
+                                  className="max-w-64 rounded-none"
+                                  sideOffset={6}
+                                >
+                                  {f.code} · {ROLE_LABEL[f.role]}: {f.name}
+                                </TooltipContent>
+                              </Tooltip>
+                            </span>
+                          )
+                        })}
+                      </p>
+                      <p className="mt-1 font-serif text-xs text-muted-foreground">
+                        {info.blurb}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
+                )
+              }
+            )}
           </div>
         </div>
       ))}
