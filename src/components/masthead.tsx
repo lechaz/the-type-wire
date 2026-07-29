@@ -16,11 +16,18 @@ export function Masthead() {
   const eventRoute = useEventRouteData()
   const t = stringsFor(region)
   const now = new Date()
+  // Explicit timeZone (matches cacheDateFor's reasoning in region.ts) —
+  // without it this defaults to the runtime's local zone, which is the
+  // server's (UTC on Vercel) during SSR and the visitor's own during
+  // client hydration. Near a UTC day boundary those disagree on the
+  // calendar date, so React swaps the SSR text for the client text right
+  // after load: a visible flash between two different dates/editions.
   const dateline = now.toLocaleDateString(REGION_CONFIG[region].locale, {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
+    timeZone: REGION_CONFIG[region].timeZone,
   })
 
   return (
