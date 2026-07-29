@@ -1,0 +1,11 @@
+/* Traditional Chinese web fonts (see DESIGN.md's CJK fallback note in
+   styles.css's --font-* stack) — split out of the main stylesheet and
+   loaded only for the TW edition (see __root.tsx). Noto Serif/Sans TC
+   compile to 400+ subsetted @font-face rules between them, ~200KB gzipped
+   of render-blocking CSS text that a US visitor — who never renders a
+   single Han character — would otherwise download and parse on every
+   page load for nothing. */
+@import "@fontsource/noto-serif-tc/400.css";
+@import "@fontsource/noto-serif-tc/700.css";
+@import "@fontsource/noto-sans-tc/400.css";
+@import "@fontsource/noto-sans-tc/700.css";

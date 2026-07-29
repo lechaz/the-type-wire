@@ -12,6 +12,7 @@ import { useCurrentRegion } from "@/lib/use-current-region"
 import { buildMetaTags } from "@/lib/site-meta"
 
 import appCss from "../styles.css?url"
+import cjkCss from "../styles-cjk.css?url"
 
 // This only covers what's known synchronously at match time (URL search
 // params) — the "/" route's category, or the site-wide default. An event's
@@ -49,6 +50,13 @@ export const Route = createRootRoute({
           rel: "stylesheet",
           href: appCss,
         },
+        // Noto Serif/Sans TC compile to 400+ subsetted @font-face rules —
+        // ~200KB gzipped of render-blocking CSS text a US visitor would
+        // otherwise download and parse for glyphs they'll never render.
+        // Loaded only for the TW edition, and reactively on a client-side
+        // region switch since head() re-runs per navigation (same
+        // mechanism the event-page <title> fix relies on).
+        ...(region === "tw" ? [{ rel: "stylesheet", href: cjkCss }] : []),
         {
           rel: "icon",
           type: "image/svg+xml",
