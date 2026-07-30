@@ -26,7 +26,7 @@ const MAX_SOURCES = 2
 // Dev override: set to a provider to drop it from rotation entirely
 // (debugging, cost control, isolating a provider-specific bug) without
 // renumbering MAX_SOURCES. Leave null to use the full priority list as-is.
-const EXCLUDE_PROVIDER: NewsProvider | null = "gdelt" // set "currents"/"rapidapi"/"gdelt" to exclude one, or null
+const EXCLUDE_PROVIDER: NewsProvider | null = "rapidapi" // set "currents"/"rapidapi"/"gdelt" to exclude one, or null
 
 function activeProviders(): NewsProvider[] {
   const pool = ALL_PROVIDERS.filter((p) => p !== EXCLUDE_PROVIDER)
