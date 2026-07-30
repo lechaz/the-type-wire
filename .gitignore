@@ -17,3 +17,4 @@ supabase/*
 # typescript
 *.tsbuildinfo
 .vercel
+CLAUDE.md
