@@ -39,7 +39,6 @@ export function DecisionMakerCard({
   mbti,
   reasoning,
   confidence,
-  index,
   region,
 }: {
   name: string
@@ -47,17 +46,13 @@ export function DecisionMakerCard({
   mbti: MbtiType
   reasoning: string
   confidence: number
-  index: number
   region: NewsRegion
 }) {
   const family = mbtiFamily(mbti)
   const t = stringsFor(region)
 
   return (
-    <details
-      className="animate-card-in group border-b border-border py-2.5 last:border-b-0 open:pb-3"
-      style={{ animationDelay: `${index * 60}ms` }}
-    >
+    <details className="decision-maker-card group border-b border-border py-2.5 last:border-b-0 open:pb-3">
       <summary className="-mx-2 flex cursor-pointer list-none items-center gap-3 rounded-none px-2 py-0.5 transition-colors hover:bg-foreground/[0.04]">
         <MbtiFigurine type={mbti} size={40} className="shrink-0" />
         <span className="min-w-0 flex-1">

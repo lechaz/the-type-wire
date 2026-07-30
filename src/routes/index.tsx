@@ -1,11 +1,12 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 import { getEvents } from "@/server/fns/events"
 import { NEWS_CATEGORIES, CATEGORY_LABELS } from "@/lib/mbti"
 import { NEWS_REGIONS } from "@/lib/region"
 import { stringsFor } from "@/lib/i18n"
+import { staggerReveal, useGSAP } from "@/lib/gsap-reveal"
 import { CategoryTabs } from "@/components/category-tabs"
 import { EventCard } from "@/components/event-card"
 import { Button } from "@/components/ui/button"
@@ -40,6 +41,14 @@ function Home() {
   const [refreshing, setRefreshing] = useState(false)
   const t = stringsFor(region)
   const label = CATEGORY_LABELS[region][category]
+  const gridRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      staggerReveal(gridRef.current!.querySelectorAll(".event-card"))
+    },
+    { scope: gridRef, dependencies: [events] }
+  )
 
   async function handleRefresh() {
     setRefreshing(true)
@@ -118,8 +127,8 @@ function Home() {
           </Empty>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          {events.map((e, i) => (
+        <div ref={gridRef} className="grid gap-4 sm:grid-cols-2">
+          {events.map((e) => (
             <EventCard
               key={e.id}
               id={e.id}
@@ -129,7 +138,6 @@ function Home() {
               category={e.category}
               region={region}
               primaryMaker={e.primaryMaker}
-              index={i}
             />
           ))}
         </div>

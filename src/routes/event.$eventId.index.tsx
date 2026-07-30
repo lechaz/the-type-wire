@@ -12,6 +12,7 @@ import { monoLabelClass } from "@/lib/region"
 import { stringsFor } from "@/lib/i18n"
 import { buildMetaTags } from "@/lib/site-meta"
 import { cn } from "@/lib/utils"
+import { staggerReveal, useGSAP } from "@/lib/gsap-reveal"
 
 const DEFAULT_BRANCH_COLOR = "#c21725"
 
@@ -91,6 +92,14 @@ function EventPage() {
     name: m.name,
     mbti: m.mbti,
   }))
+  const makersRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      staggerReveal(makersRef.current!.querySelectorAll(".decision-maker-card"))
+    },
+    { scope: makersRef, dependencies: [decisionMakers] }
+  )
 
   useEffect(() => {
     const el = scrollRef.current
@@ -179,8 +188,8 @@ function EventPage() {
         >
           {t.byline}
         </h2>
-        <div className="px-3">
-          {decisionMakers.map((m, i) => (
+        <div ref={makersRef} className="px-3">
+          {decisionMakers.map((m) => (
             <DecisionMakerCard
               key={m.id}
               name={m.name}
@@ -188,7 +197,6 @@ function EventPage() {
               mbti={m.mbti}
               reasoning={m.reasoning}
               confidence={m.confidence}
-              index={i}
               region={region}
             />
           ))}

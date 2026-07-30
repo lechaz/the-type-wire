@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useRef, useState } from "react"
 import {
   Tooltip,
   TooltipContent,
@@ -8,6 +8,7 @@ import { stringsFor } from "@/lib/i18n"
 import { REGION_CONFIG, monoLabelClass } from "@/lib/region"
 import type { NewsRegion } from "@/lib/region"
 import { cn } from "@/lib/utils"
+import { staggerReveal, useGSAP } from "@/lib/gsap-reveal"
 
 type Node = {
   id: string
@@ -40,10 +41,18 @@ export function PredictionTimeline({
   const locale = REGION_CONFIG[region].locale
   const [whyOpen, setWhyOpen] = useState(false)
   const [openNodeId, setOpenNodeId] = useState<string | null>(null)
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useGSAP(
+    () => {
+      staggerReveal(rootRef.current!.querySelectorAll(".timeline-node"))
+    },
+    { scope: rootRef, dependencies: [nodes] }
+  )
 
   return (
-    <div>
-      <div className="animate-card-in flex flex-wrap items-start gap-2">
+    <div ref={rootRef}>
+      <div className="timeline-node flex flex-wrap items-start gap-2">
         <span
           className="mt-1.5 size-2.5 shrink-0"
           style={{ backgroundColor: branchColor }}
@@ -91,7 +100,7 @@ export function PredictionTimeline({
           style={{ backgroundColor: `${branchColor}55` }}
           aria-hidden
         />
-        {nodes.map((n, i) => (
+        {nodes.map((n) => (
           <Tooltip
             key={n.id}
             open={openNodeId === n.id}
@@ -114,10 +123,9 @@ export function PredictionTimeline({
                   onClick={() =>
                     setOpenNodeId((id) => (id === n.id ? null : n.id))
                   }
-                  className="animate-card-in relative block w-full text-left focus-visible:outline-none"
+                  className="timeline-node relative block w-full text-left focus-visible:outline-none"
                 />
               }
-              style={{ animationDelay: `${i * 60}ms` }}
             >
               <span
                 className="absolute top-1 -left-7 block size-3.5 border-2 border-background"

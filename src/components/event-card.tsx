@@ -15,7 +15,6 @@ export function EventCard({
   category,
   region,
   primaryMaker,
-  index,
 }: {
   id: string
   headline: string
@@ -24,7 +23,6 @@ export function EventCard({
   category: NewsCategory
   region: NewsRegion
   primaryMaker: { name: string; mbti: MbtiType } | null
-  index: number
 }) {
   const t = stringsFor(region)
 
@@ -32,8 +30,7 @@ export function EventCard({
     <Link
       to="/event/$eventId"
       params={{ eventId: id }}
-      className="group animate-card-in block border border-border bg-card p-4 transition-colors duration-160 hover:border-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:bg-secondary"
-      style={{ animationDelay: `${index * 60}ms` }}
+      className="group event-card block border border-border bg-card p-4 transition-colors duration-160 hover:border-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none active:bg-secondary"
     >
       <p
         className={cn(

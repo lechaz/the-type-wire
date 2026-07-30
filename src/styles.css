@@ -154,38 +154,6 @@ round covering visual world, nav structure, and naming. See DESIGN.md.
 }
 
 @layer utilities {
-  @keyframes card-in {
-    from { opacity: 0; transform: translateY(8px) scale(0.97); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-  .animate-card-in {
-    animation: card-in 300ms var(--ease-out-strong) both;
-  }
-
-  @keyframes mbti-reveal {
-    from { opacity: 0.35; filter: blur(4px); }
-    to { opacity: 1; filter: blur(0); }
-  }
-  .mbti-reveal {
-    animation: mbti-reveal 400ms var(--ease-out-strong) both;
-  }
-
-  @keyframes confidence-fill {
-    from { transform: scaleX(0); }
-    to { transform: scaleX(var(--target-scale)); }
-  }
-  .confidence-fill {
-    animation: confidence-fill 500ms var(--ease-out-strong) both;
-  }
-
-  @keyframes predict-sweep {
-    from { clip-path: inset(0 100% 0 0); }
-    to { clip-path: inset(0 0 0 0); }
-  }
-  .predict-sweep {
-    animation: predict-sweep 1.6s linear forwards;
-  }
-
   @keyframes route-progress-sweep {
     from { transform: translateX(-100%); }
     to { transform: translateX(250%); }
@@ -195,10 +163,6 @@ round covering visual world, nav structure, and naming. See DESIGN.md.
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .animate-card-in,
-    .mbti-reveal,
-    .confidence-fill,
-    .predict-sweep,
     .route-progress-sweep {
       animation: none;
     }
