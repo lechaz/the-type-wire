@@ -87,12 +87,15 @@ function triagePrompt(
     "A real, named individual is identifiably behind it — a sitting executive, " +
       "founder, official, or other public figure (not an anonymous source, not " +
       '"analysts say", not a company as an abstraction with nobody named).',
-    "The story is a genuine, consequential decision or move — one that " +
-      "plausibly shapes what happens next for the organization, market, or " +
-      "public discourse, and gives real material for a 30-day forecast. The " +
-      "individual doesn't need to be world-famous and the outcome doesn't need " +
-      "to be historic, but it does need real stakes: a strategic pivot, a policy " +
-      "move, a contested decision, a shakeup, a high-stakes bet.",
+    "The story is a genuine decision or move made BY that individual — one " +
+      "that plausibly shapes what happens next for the organization, market, " +
+      "or public discourse, and gives real material for a 30-day forecast. " +
+      "The individual doesn't need to be world-famous and the outcome doesn't " +
+      "need to be historic or dramatic: a strategic pivot, a policy move, a " +
+      "contested decision, a shakeup, a high-stakes bet, a funded initiative, " +
+      "a product or program launch, or a deal they're driving all count — as " +
+      "long as it's their real call, not just their organization's routine " +
+      "activity happening to get covered.",
   ]
   // This edition's outlets routinely carry wire-service pickups of foreign
   // news (AFP/Reuters stories translated or republished verbatim) — those
@@ -129,6 +132,11 @@ function triagePrompt(
     "  not this edition's own story.",
     '- KEEP: "Mayor abruptly fires police chief after leaked memo surfaces"',
     "  — genuinely local, genuinely consequential, a named figure at the center.",
+    '- KEEP: "Foundation head commits $300M to launch new open-source AI initiative"',
+    "  — a concrete decision with real resources behind it, not headline drama,",
+    "  but a genuine call by a named leader with real follow-through to forecast.",
+    '- REJECT: "Company hosts booth at industry AI expo, executives attend"',
+    "  — a named person is present, but nobody is making a decision, just showing up.",
     "",
     "This list is drawn from a wide pool, so an empty result is a completely",
     "legitimate outcome on a slow news day. Do not keep a weak item just to",

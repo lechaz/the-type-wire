@@ -48,12 +48,15 @@ export function eventTriageJsonSchema(region: NewsRegion) {
             keep: {
               type: "boolean",
               description:
-                "true only if a real named individual is behind it AND it's a genuine, " +
-                "consequential decision or move with real stakes. False for routine " +
-                'statements, minor personnel notes, generic "X talks about Y" coverage, ' +
-                "opinion pieces, investment-tip listicles, and roundups, even if a named " +
-                "individual is technically mentioned. An empty result is a legitimate " +
-                "outcome; do not keep a weak item just to avoid one.",
+                "true only if a real named individual is behind it AND it's a genuine " +
+                "decision or move they made — a strategic pivot, policy move, contested " +
+                "decision, shakeup, high-stakes bet, funded initiative, product/program " +
+                "launch, or deal they're driving, not just their organization's routine " +
+                "activity getting covered. Doesn't need to be historic or dramatic. False " +
+                'for routine statements, minor personnel notes, generic "X talks about Y" ' +
+                "coverage, opinion pieces, investment-tip listicles, and roundups, even if " +
+                "a named individual is technically mentioned. An empty result is a " +
+                "legitimate outcome; do not keep a weak item just to avoid one.",
             },
             primary_maker_name: {
               type: "string",
