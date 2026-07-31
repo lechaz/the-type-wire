@@ -8,7 +8,7 @@ Delivered in-character as a deadpan wire-service bulletin: total bureaucratic se
 
 ## How it works
 
-1. **Ingest** — [Currents API](https://currentsapi.services/), [RapidAPI Real-Time News Data](https://rapidapi.com/), and [GDELT](https://www.gdeltproject.org/) are queried in parallel per category/region and deduped into one pool (by URL and normalized title); any can be forced alone via `FORCE_PROVIDER`, or excluded via `EXCLUDE_PROVIDER`, in `src/server/news/client.ts` for debugging.
+1. **Ingest** — [Currents API](https://currentsapi.services/), [RapidAPI Real-Time News Data](https://rapidapi.com/), and [GDELT](https://www.gdeltproject.org/) are queried in parallel per category/region and deduped into one pool (by URL and normalized title). Which 2 providers are active per region is decided by a daily health-audit cron (`src/server/news/audit.ts`, `/api/cron/provider-audit`) rather than a hardcoded choice — a dead or quota-exhausted provider drops out and rejoins automatically once it recovers. `NEWS_EXCLUDE_PROVIDER` overrides this to force a provider out of rotation for debugging.
 2. **Triage** — Gemini (`gemini-3.5-flash-lite`) tags each story's primary decision-maker with an MBTI type and reasoning, dropping driver-less roundups and pure listicles.
 3. **Predict** — Gemini reasons a 30-day forecast timeline from that person's personality read. The default timeline is wire-red; user-created what-if branches (swapping in a different MBTI type) take the ink color of that personality family.
 4. **Serve** — Supabase caches ingested stories, triage results, and predictions per category/region/day; a manual "Refresh" re-triggers ingestion on demand. If an API quota is exhausted, cached articles are served instead of erroring out.
@@ -45,6 +45,7 @@ Requires the following environment variables (`.env.local` for local dev, or pro
 - `CURRENTS_API_KEY`, `CURRENTS_API_BASE`
 - `RAPIDAPI_KEY`, `RAPIDAPI_HOST`
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+- `CRON_SECRET` — authenticates the daily `/api/cron/provider-audit` run (Vercel sends it automatically once set; see `vercel.json`)
 
 ## Design
 

@@ -8,13 +8,14 @@ import type { NewsArticle } from "./types"
 import type { NewsCategory } from "@/lib/mbti"
 import { REGION_CONFIG } from "@/lib/region"
 import type { NewsRegion } from "@/lib/region"
+import { getDb } from "@/server/db"
 
-type NewsProvider = "currents" | "rapidapi" | "gdelt"
+export type NewsProvider = "currents" | "rapidapi" | "gdelt"
 // Every provider this app knows how to query, in priority order. Currents
 // and GDELT lead — RapidAPI's Real-Time News Data is left wired up (below)
 // but its BASIC plan's monthly quota has been running dry, so it's last in
 // line and only gets used if MAX_SOURCES is raised to include it.
-const ALL_PROVIDERS: NewsProvider[] = ["currents", "gdelt", "rapidapi"]
+export const ALL_PROVIDERS: NewsProvider[] = ["currents", "gdelt", "rapidapi"]
 
 // Dev knob: how many providers to actually query per fetch, taken in
 // priority order from ALL_PROVIDERS (after EXCLUDE_PROVIDER is removed).
@@ -23,15 +24,84 @@ const ALL_PROVIDERS: NewsProvider[] = ["currents", "gdelt", "rapidapi"]
 // nothing more to add.
 const MAX_SOURCES = 2
 
-// Dev override: set to a provider to drop it from rotation entirely
-// (debugging, cost control, isolating a provider-specific bug) without
-// renumbering MAX_SOURCES. Leave null to use the full priority list as-is.
-const EXCLUDE_PROVIDER: NewsProvider | null = "rapidapi" // set "currents"/"rapidapi"/"gdelt" to exclude one, or null
+// Env override: set to a provider name to drop it from rotation entirely
+// (debugging, cost control, isolating a provider-specific bug). An env var
+// rather than a constant on purpose — a constant here caused a multi-day
+// outage (2026-07-30): it got left pointing at the wrong provider after a
+// debugging session and shipped. Unset in normal operation; the DB-backed
+// health audit below is the real source of truth.
+const EXCLUDE_PROVIDER = process.env.NEWS_EXCLUDE_PROVIDER as
+  | NewsProvider
+  | undefined
 
-function activeProviders(): NewsProvider[] {
+// A provider is healthy for a region if it has a recent audit row (written
+// by the daily cron, src/routes/api.cron.provider-audit.ts) with enough
+// articles. Window is time-based, not a row count — Vercel Hobby cron
+// delivery is best-effort and can both skip a day and double-deliver the
+// same run, so counting rows would let a duplicate distort the lookback.
+// 2 days, not 3: this rule is asymmetric (promotion is instant, eviction
+// takes the full window), so widening it re-introduces a multi-day blind
+// spot — the exact failure this mechanism exists to prevent. Keep this
+// coupled to the cron's daily cadence if that schedule ever changes.
+const HEALTH_WINDOW_DAYS = 2
+const MIN_ARTICLES = 5
+
+async function healthyProviders(region: NewsRegion): Promise<NewsProvider[]> {
+  const since = new Date(
+    Date.now() - HEALTH_WINDOW_DAYS * 24 * 60 * 60 * 1000
+  ).toISOString()
+
+  const { data, error } = await getDb()
+    .from("provider_audits")
+    .select("provider")
+    .eq("region", region)
+    .eq("ok", true)
+    .gte("article_count", MIN_ARTICLES)
+    .gte("checked_at", since)
+
+  if (error) throw new Error(error.message)
+
+  // Validate against ALL_PROVIDERS: fetchFromProvider's dispatch below has
+  // no default case (unrecognized providers fall through to RapidAPI), so
+  // an unrecognized string reaching this app would silently route to the
+  // quota-exhausted provider — the same class of failure this replaces.
+  const healthy = new Set(
+    data
+      .map((r) => r.provider)
+      .filter((p): p is NewsProvider => (ALL_PROVIDERS as string[]).includes(p))
+  )
+  return ALL_PROVIDERS.filter((p) => healthy.has(p))
+}
+
+async function activeProviders(region: NewsRegion): Promise<NewsProvider[]> {
   const pool = ALL_PROVIDERS.filter((p) => p !== EXCLUDE_PROVIDER)
+
+  let healthy: NewsProvider[] = []
+  try {
+    healthy = (await healthyProviders(region)).filter((p) => p !== EXCLUDE_PROVIDER)
+  } catch (err) {
+    console.warn(
+      `[activeProviders] health lookup failed for ${region}, falling back to priority order:`,
+      err
+    )
+  }
+
+  // Fewer than 2 healthy providers (including "no audit data yet") backfills
+  // from the static priority order — never fewer than MAX_SOURCES providers
+  // in rotation just because the audit table is empty or briefly stale.
+  const selected =
+    healthy.length >= 2
+      ? healthy
+      : [...healthy, ...pool.filter((p) => !healthy.includes(p))]
+
+  if (healthy.length < 2) {
+    console.warn(
+      `[activeProviders] only ${healthy.length} healthy provider(s) for ${region}, backfilled from priority order`
+    )
+  }
+
   const max = Math.max(2, Math.min(MAX_SOURCES, ALL_PROVIDERS.length))
-  return pool.slice(0, max)
+  return selected.slice(0, max)
 }
 
 // RapidAPI's Real-Time News Data 400s on the plain "zh" tag region.ts uses
@@ -87,6 +157,7 @@ async function searchCurrentsOnce(
 
   return fetch(url, {
     headers: { Authorization: key },
+    signal: AbortSignal.timeout(8000),
   })
 }
 
@@ -150,6 +221,7 @@ async function searchRapidApiOnce(
 
   return fetch(url, {
     headers: { "x-rapidapi-key": key, "x-rapidapi-host": host },
+    signal: AbortSignal.timeout(8000),
   })
 }
 
@@ -255,6 +327,7 @@ async function searchGdeltOnce(query: string) {
       "User-Agent":
         "Mozilla/5.0 (compatible; TheTypeWire/1.0; +https://the-type-wire.vercel.app)",
     },
+    signal: AbortSignal.timeout(8000),
   })
   // GDELT signals its rate limit two different ways depending on load: a
   // genuine 429, or (see above) a 200 with a plain-text notice instead of
@@ -306,7 +379,7 @@ async function searchGdelt(
     }))
 }
 
-function fetchFromProvider(
+export function fetchFromProvider(
   provider: NewsProvider,
   query: string,
   region: NewsRegion
@@ -444,7 +517,7 @@ export async function fetchTopArticles(
   region: NewsRegion
 ): Promise<NewsArticle[]> {
   const query = CATEGORY_QUERIES[region][category]
-  const providers = activeProviders()
+  const providers = await activeProviders(region)
 
   const results = await Promise.allSettled(
     providers.map((provider) => fetchFromProvider(provider, query, region))

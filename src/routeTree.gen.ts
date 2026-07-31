@@ -10,11 +10,17 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiCronProviderAuditRouteImport } from './routes/api.cron.provider-audit'
 import { Route as EventEventIdIndexRouteImport } from './routes/event.$eventId.index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCronProviderAuditRoute = ApiCronProviderAuditRouteImport.update({
+  id: '/api/cron/provider-audit',
+  path: '/api/cron/provider-audit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const EventEventIdIndexRoute = EventEventIdIndexRouteImport.update({
@@ -25,27 +31,31 @@ const EventEventIdIndexRoute = EventEventIdIndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/cron/provider-audit': typeof ApiCronProviderAuditRoute
   '/event/$eventId/': typeof EventEventIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/cron/provider-audit': typeof ApiCronProviderAuditRoute
   '/event/$eventId': typeof EventEventIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/cron/provider-audit': typeof ApiCronProviderAuditRoute
   '/event/$eventId/': typeof EventEventIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/event/$eventId/'
+  fullPaths: '/' | '/api/cron/provider-audit' | '/event/$eventId/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/event/$eventId'
-  id: '__root__' | '/' | '/event/$eventId/'
+  to: '/' | '/api/cron/provider-audit' | '/event/$eventId'
+  id: '__root__' | '/' | '/api/cron/provider-audit' | '/event/$eventId/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiCronProviderAuditRoute: typeof ApiCronProviderAuditRoute
   EventEventIdIndexRoute: typeof EventEventIdIndexRoute
 }
 
@@ -56,6 +66,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/provider-audit': {
+      id: '/api/cron/provider-audit'
+      path: '/api/cron/provider-audit'
+      fullPath: '/api/cron/provider-audit'
+      preLoaderRoute: typeof ApiCronProviderAuditRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/event/$eventId/': {
@@ -70,6 +87,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiCronProviderAuditRoute: ApiCronProviderAuditRoute,
   EventEventIdIndexRoute: EventEventIdIndexRoute,
 }
 export const routeTree = rootRouteImport

@@ -247,6 +247,36 @@ export interface Database {
         }
         Relationships: []
       }
+      provider_audits: {
+        Row: {
+          id: string
+          checked_at: string
+          region: NewsRegionRow
+          provider: string
+          ok: boolean
+          article_count: number
+          error: string | null
+        }
+        Insert: {
+          id?: string
+          checked_at?: string
+          region: NewsRegionRow
+          provider: string
+          ok: boolean
+          article_count?: number
+          error?: string | null
+        }
+        Update: {
+          id?: string
+          checked_at?: string
+          region?: NewsRegionRow
+          provider?: string
+          ok?: boolean
+          article_count?: number
+          error?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
