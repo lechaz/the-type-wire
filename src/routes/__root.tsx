@@ -1,5 +1,6 @@
 import { useEffect } from "react"
 import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
+import { Analytics } from "@vercel/analytics/react"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { Toaster } from "@/components/ui/sonner"
 import { RouteProgress } from "@/components/route-progress"
@@ -154,6 +155,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           <LegendDrawer />
           <Toaster theme="light" position="bottom-right" />
         </TooltipProvider>
+        <Analytics />
         <Scripts />
       </body>
     </html>
