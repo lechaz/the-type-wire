@@ -112,9 +112,9 @@ function triagePrompt(
   }
 
   return [
-    `This is the ${editionLabel} edition. This list was pulled by keyword search`,
-    `for the ${category.toUpperCase()} desk, so it will contain stories that only`,
-    "coincidentally match the keyword. Keep an item only if it clears ALL of these:",
+    `This is the ${editionLabel} edition. This list was pulled from the`,
+    `${category.toUpperCase()} desk's news feed(s), so it may still contain stories`,
+    "that don't actually belong here. Keep an item only if it clears ALL of these:",
     ...criteria.map((c, i) => `${i + 1}. ${c}`),
     "",
     "Reject: routine statements or interviews with no real decision in them,",

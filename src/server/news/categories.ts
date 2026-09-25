@@ -1,32 +1,73 @@
 import type { NewsCategory } from "@/lib/mbti"
 import type { NewsRegion } from "@/lib/region"
 
-// Search query fed to the Currents API /search endpoint per region+category.
-// TW queries use Chinese terms since the API matches against article text
-// in the article's own language.
-export const CATEGORY_QUERIES: Record<
+export interface FeedSource {
+  url: string
+  name: string
+}
+
+// Public RSS feeds from reputable outlets, one or more per desk. Verified
+// live 2026-09-24: all return RSS 2.0 with same-day pubDates. Currents/
+// RapidAPI/GDELT keyword search was replaced with these because free-tier
+// API quotas and rate limits made ingestion unreliable and slow — RSS has
+// neither.
+//
+// TW has no dedicated AI outlet/feed, so "ai" reuses the general CNA
+// Technology feed — the existing triage prompt's CATEGORY_FIT["ai"] rule
+// (events.ts) already rejects non-AI tech stories, so no separate
+// classification step is needed here.
+export const FEED_CONFIG: Record<
   NewsRegion,
-  Record<NewsCategory, string>
+  Record<NewsCategory, FeedSource[]>
 > = {
   us: {
-    ai: "artificial intelligence",
-    finance: "finance markets economy",
-    politics: "politics government",
-    international: "international world news",
-    technology: "technology",
+    ai: [
+      {
+        url: "https://techcrunch.com/category/artificial-intelligence/feed/",
+        name: "TechCrunch",
+      },
+    ],
+    finance: [
+      {
+        url: "https://www.cnbc.com/id/10000664/device/rss/rss.html",
+        name: "CNBC",
+      },
+      { url: "https://feeds.bbci.co.uk/news/business/rss.xml", name: "BBC" },
+    ],
+    politics: [
+      {
+        url: "https://www.cnbc.com/id/10000113/device/rss/rss.html",
+        name: "CNBC",
+      },
+      { url: "https://feeds.bbci.co.uk/news/politics/rss.xml", name: "BBC" },
+    ],
+    international: [
+      { url: "https://feeds.bbci.co.uk/news/world/rss.xml", name: "BBC" },
+      {
+        url: "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+        name: "The New York Times",
+      },
+    ],
+    technology: [
+      { url: "https://feeds.bbci.co.uk/news/technology/rss.xml", name: "BBC" },
+      { url: "https://techcrunch.com/feed/", name: "TechCrunch" },
+    ],
   },
-  // Currents' CJK "keywords" matching is inconsistent for multi-word
-  // space-joined queries — some pairs return a full pool ("科技 AI"),
-  // others return zero regardless of retries ("財經 股市", "政治 政府",
-  // verified live 2026-07-26). Single common terms reliably return a full
-  // pool, so those stay single-term; "科技" alone returns plenty of
-  // results but almost none are actually about technology (verified: 2/20
-  // passed the relevance filter), and "科技 AI" tested far better (7/12).
   tw: {
-    ai: "人工智慧",
-    finance: "財經",
-    politics: "政治",
-    international: "國際",
-    technology: "科技 AI",
+    ai: [
+      { url: "https://feeds.feedburner.com/rsscna/technology", name: "中央社" },
+    ],
+    finance: [
+      { url: "https://feeds.feedburner.com/rsscna/finance", name: "中央社" },
+    ],
+    politics: [
+      { url: "https://feeds.feedburner.com/rsscna/politics", name: "中央社" },
+    ],
+    international: [
+      { url: "https://feeds.feedburner.com/rsscna/intworld", name: "中央社" },
+    ],
+    technology: [
+      { url: "https://feeds.feedburner.com/rsscna/technology", name: "中央社" },
+    ],
   },
 }

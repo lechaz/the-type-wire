@@ -252,7 +252,9 @@ export interface Database {
           id: string
           checked_at: string
           region: NewsRegionRow
+          category: NewsCategoryRow | null
           provider: string
+          feed_url: string | null
           ok: boolean
           article_count: number
           error: string | null
@@ -261,7 +263,9 @@ export interface Database {
           id?: string
           checked_at?: string
           region: NewsRegionRow
+          category?: NewsCategoryRow | null
           provider: string
+          feed_url?: string | null
           ok: boolean
           article_count?: number
           error?: string | null
@@ -270,7 +274,9 @@ export interface Database {
           id?: string
           checked_at?: string
           region?: NewsRegionRow
+          category?: NewsCategoryRow | null
           provider?: string
+          feed_url?: string | null
           ok?: boolean
           article_count?: number
           error?: string | null
