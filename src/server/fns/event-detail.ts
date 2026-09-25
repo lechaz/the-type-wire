@@ -67,22 +67,27 @@ export const getEventDetail = createServerFn({ method: "GET" })
   .handler(async ({ data }) => {
     const db = getDb()
 
-    const { data: event, error: eventError } = await db
-      .from("events")
-      .select(
-        "id, category, region, headline, source_name, source_url, published_at, summary"
-      )
-      .eq("id", data.eventId)
-      .single()
+    // Both queries key off data.eventId directly (not off each other's
+    // result), so they run as one round trip instead of two sequential ones.
+    const [
+      { data: event, error: eventError },
+      { data: existingMakers, error: makersError },
+    ] = await Promise.all([
+      db
+        .from("events")
+        .select(
+          "id, category, region, headline, source_name, source_url, published_at, summary"
+        )
+        .eq("id", data.eventId)
+        .single(),
+      db
+        .from("decision_makers")
+        .select("id, name, role, mbti, reasoning, confidence, sort_order")
+        .eq("event_id", data.eventId)
+        .order("sort_order", { ascending: true }),
+    ])
 
     if (eventError) throw new Error(EVENT_NOT_FOUND)
-
-    const { data: existingMakers, error: makersError } = await db
-      .from("decision_makers")
-      .select("id, name, role, mbti, reasoning, confidence, sort_order")
-      .eq("event_id", event.id)
-      .order("sort_order", { ascending: true })
-
     if (makersError) throw new Error(makersError.message)
     // A single row here means it's just the landing-page primary-maker seed
     // (see getEvents) — expand to the full 2-5 roster instead of treating
