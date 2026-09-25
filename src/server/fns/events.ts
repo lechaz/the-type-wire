@@ -395,10 +395,18 @@ export const getEvents = createServerFn({ method: "GET" })
         .filter((row) => row !== null)
 
       if (seedRows.length > 0) {
+        // Non-fatal: events are already upserted above, so a seed failure
+        // shouldn't discard that data or degrade the whole response — it'd
+        // otherwise permanently orphan these events with no primary maker,
+        // since re-seeding only runs for events not yet in decision_makers.
         const { error: seedError } = await db
           .from("decision_makers")
           .insert(seedRows)
-        if (seedError) throw new Error(seedError.message)
+        if (seedError)
+          console.error(
+            `[getEvents] decision_makers seed failed for ${category}/${region}:`,
+            seedError.message
+          )
       }
 
       return {

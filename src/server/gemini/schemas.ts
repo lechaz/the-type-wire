@@ -60,7 +60,9 @@ export function eventTriageJsonSchema(region: NewsRegion) {
             },
             primary_maker_name: {
               type: "string",
-              description: `Their real name.${lang}`,
+              description:
+                `A real named individual (a specific person) — never an organization, ` +
+                `party, company, union, or other collective entity.${lang}`,
             },
             primary_maker_role: {
               type: "string",
