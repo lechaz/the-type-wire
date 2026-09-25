@@ -1,4 +1,8 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  stripSearchParams,
+  useRouter,
+} from "@tanstack/react-router"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -25,6 +29,9 @@ const searchSchema = z.object({
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>) =>
     searchSchema.parse(search),
+  search: {
+    middlewares: [stripSearchParams({ category: "ai", region: "us" })],
+  },
   loaderDeps: ({ search }) => ({
     category: search.category,
     region: search.region,
