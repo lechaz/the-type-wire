@@ -5,7 +5,7 @@ export const SITE_NAME = "The Type Wire"
 // artwork exists to generate a real og:image from, and this site's live
 // screenshots tend to capture whatever large MBTI figurine is in view,
 // which reads as a random avatar in the share sheet.
-export const SITE_OG_IMAGE = `${SITE_URL}/apple-touch-icon.png`
+export const SITE_OG_IMAGE = `${SITE_URL}/og-image.png`
 
 // Builds the meta tag list every route's head() shares — parent (root) and
 // child (a specific route) meta entries are merged by matching key
@@ -31,7 +31,9 @@ export function buildMetaTags({
     { property: "og:title", content: ogTitle },
     { property: "og:description", content: description },
     { property: "og:image", content: SITE_OG_IMAGE },
-    { name: "twitter:card", content: "summary" },
+    { property: "og:image:width", content: "1200" },
+    { property: "og:image:height", content: "630" },
+    { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: ogTitle },
     { name: "twitter:description", content: description },
     { name: "twitter:image", content: SITE_OG_IMAGE },
