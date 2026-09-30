@@ -24,7 +24,8 @@ export function Masthead() {
   const region = useCurrentRegion()
   const eventRoute = useEventRouteData()
   const leafRoute = useMatches({ select: (matches) => matches.at(-1)?.routeId })
-  const onCustom = leafRoute === "/custom"
+  // A custom story's event page still belongs to the Custom tab.
+  const onCustom = leafRoute === "/custom" || eventRoute?.category === "custom"
   const t = stringsFor(region)
   const now = new Date()
   // The dateline is meant to read in the visitor's own local time, which
