@@ -18,6 +18,8 @@ import { stringsFor } from "@/lib/i18n"
 import { buildMetaTags } from "@/lib/site-meta"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const searchSchema = z.object({
   region: z.enum(NEWS_REGIONS).optional().catch(undefined),
@@ -143,7 +145,7 @@ function CustomPage() {
         <label htmlFor="custom-url" className="sr-only">
           {t.customUrlPlaceholder}
         </label>
-        <input
+        <Input
           id="custom-url"
           type="url"
           inputMode="url"
@@ -152,23 +154,29 @@ function CustomPage() {
           onChange={(e) => setUrl(e.target.value)}
           onPaste={handlePaste}
           placeholder={t.customUrlPlaceholder}
-          className="w-full border border-border bg-background px-3 py-2 font-mono text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          aria-invalid={error !== null}
+          aria-describedby={error ? "custom-url-error" : undefined}
+          className="h-10 font-mono"
         />
       </form>
 
       <div className="mt-4" aria-live="polite">
         {loading && (
-          <p
-            className={cn(
-              "font-mono text-[11px] text-muted-foreground",
-              monoLabelClass(region)
-            )}
-          >
-            {t.customFetching}
-          </p>
+          // Same footprint as the preview card, so the page doesn't jump
+          // when the real preview replaces it.
+          <div className="border border-border" aria-busy="true">
+            <span className="sr-only">{t.customFetching}</span>
+            <Skeleton className="aspect-[1.91/1] w-full rounded-none" />
+            <div className="space-y-2 px-4 py-3">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-5 w-4/5" />
+              <Skeleton className="h-4 w-full" />
+            </div>
+          </div>
         )}
         {error && (
           <p
+            id="custom-url-error"
             className={cn(
               "font-mono text-[11px] text-wire-red",
               monoLabelClass(region)
