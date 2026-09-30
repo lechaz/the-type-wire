@@ -50,7 +50,8 @@ const en = {
   customAnalyze: "Run the analysis",
   customAnalyzing: "Filing…",
   customAnalyzeFailed: "Couldn't file that story. Try again shortly.",
-  customUnsupportedLanguage: "The wire only files English or Chinese stories.",
+  customUnsupportedLanguage:
+    "The U.S. desk only files English-language stories.",
 }
 
 export type Strings = typeof en
@@ -104,7 +105,7 @@ const zhHant: Strings = {
   customAnalyze: "開始分析",
   customAnalyzing: "分析中…",
   customAnalyzeFailed: "無法分析此新聞，請稍後再試。",
-  customUnsupportedLanguage: "僅受理英文或中文新聞。",
+  customUnsupportedLanguage: "臺灣版僅受理中文新聞。",
 }
 
 const TABLE: Record<NewsRegion, Strings> = { us: en, tw: zhHant }

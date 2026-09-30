@@ -5,6 +5,7 @@ import { getDb } from "@/server/db"
 import { fetchLinkPreview } from "@/server/news/link-preview"
 import {
   NEWS_REGIONS,
+  REGION_CONFIG,
   REGION_COOKIE,
   TAB_COOKIE,
   cacheDateFor,
@@ -16,13 +17,16 @@ export const getLastTab = createServerFn({ method: "GET" }).handler(() => ({
   custom: getCookie(TAB_COOKIE) === "custom",
 }))
 
-const PreviewInput = z.object({ url: z.string().url().max(2048) })
+const LinkInput = z.object({
+  url: z.string().url().max(2048),
+  region: z.enum(NEWS_REGIONS),
+})
 
 export const previewCustomLink = createServerFn({ method: "POST" })
-  .validator(PreviewInput)
-  .handler(({ data }) => fetchLinkPreview(data.url))
-
-const AnalyzeInput = PreviewInput.extend({ region: z.enum(NEWS_REGIONS) })
+  .validator(LinkInput)
+  .handler(({ data }) =>
+    fetchLinkPreview(data.url, REGION_CONFIG[data.region].contentLanguage)
+  )
 
 // Re-scrapes server-side rather than trusting the client's preview — the
 // resulting event page is public, so a client-supplied headline would let
@@ -33,7 +37,7 @@ const AnalyzeInput = PreviewInput.extend({ region: z.enum(NEWS_REGIONS) })
 // the already-generated summary with the page's raw, source-language
 // description, and ingest won't rerun to fix it (the roster already exists).
 export const analyzeCustomLink = createServerFn({ method: "POST" })
-  .validator(AnalyzeInput)
+  .validator(LinkInput)
   .handler(async ({ data }) => {
     const db = getDb()
     const cacheDate = cacheDateFor(data.region)
@@ -53,7 +57,10 @@ export const analyzeCustomLink = createServerFn({ method: "POST" })
     const existing = await findEvent(data.url)
     if (existing) return { eventId: existing }
 
-    const preview = await fetchLinkPreview(data.url)
+    const preview = await fetchLinkPreview(
+      data.url,
+      REGION_CONFIG[data.region].contentLanguage
+    )
     const { error } = await db.from("events").upsert(
       {
         category: "custom",

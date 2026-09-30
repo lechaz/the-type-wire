@@ -1,6 +1,7 @@
 import { lookup } from "node:dns/promises"
 import { BlockList, isIP } from "node:net"
 import { UNSUPPORTED_LANGUAGE } from "@/lib/region"
+import type { ContentLanguage } from "@/lib/region"
 
 const FETCH_TIMEOUT_MS = 8000
 const MAX_REDIRECTS = 5
@@ -121,12 +122,15 @@ function decodeEntities(s: string): string {
 // Latin-script case (English vs. French/Spanish/etc.).
 // ponytail: an undeclared non-English Latin-script page passes as English;
 // add a stopword check if that shows up.
-export function isEnglishOrChinese(text: string, declaredLang: string) {
+export function detectLanguage(
+  text: string,
+  declaredLang: string
+): ContentLanguage | null {
   if (/[\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(text))
-    return false
-  if (/\p{Script=Han}/u.test(text)) return true
-  if (/[^\P{L}\p{Script=Latin}]/u.test(text)) return false
-  return !declaredLang || /^(en|zh)/.test(declaredLang)
+    return null
+  if (/\p{Script=Han}/u.test(text)) return "zh"
+  if (/[^\P{L}\p{Script=Latin}]/u.test(text)) return null
+  return !declaredLang || /^(en|zh)/.test(declaredLang) ? "en" : null
 }
 
 // Page titles carry site/section chrome that shouldn't become the filed
@@ -148,7 +152,13 @@ export function stripTitleChrome(title: string): string {
   return title
 }
 
-export function parseLinkPreview(html: string, pageUrl: string): LinkPreview {
+// Each edition's Custom tab files only stories in its own language — the
+// wire never translates a reader's link.
+export function parseLinkPreview(
+  html: string,
+  pageUrl: string,
+  language: ContentLanguage
+): LinkPreview {
   const meta = new Map<string, string>()
   for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
     const attrs = new Map<string, string>()
@@ -177,7 +187,7 @@ export function parseLinkPreview(html: string, pageUrl: string): LinkPreview {
     html.match(/<html\b[^>]*\blang\s*=\s*["']?([\w-]+)/i)?.[1] ??
     pick("og:locale")
   ).toLowerCase()
-  if (!isEnglishOrChinese(`${title} ${description}`, declaredLang))
+  if (detectLanguage(`${title} ${description}`, declaredLang) !== language)
     throw new Error(UNSUPPORTED_LANGUAGE)
 
   const image = pick("og:image", "og:image:url", "twitter:image")
@@ -198,7 +208,10 @@ export function parseLinkPreview(html: string, pageUrl: string): LinkPreview {
   }
 }
 
-export async function fetchLinkPreview(raw: string): Promise<LinkPreview> {
+export async function fetchLinkPreview(
+  raw: string,
+  language: ContentLanguage
+): Promise<LinkPreview> {
   const { url, html } = await fetchHtml(raw)
-  return parseLinkPreview(html, url)
+  return parseLinkPreview(html, url, language)
 }

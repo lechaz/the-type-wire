@@ -63,19 +63,23 @@ function CustomPage() {
   const [analyzing, setAnalyzing] = useState(false)
   const latestRequest = useRef(0)
 
+  // Per edition — each accepts only its own language, so a link saved on
+  // one would just fail on the other.
+  const storageKey = `${STORAGE_KEY}-${region}`
+
   // localStorage only exists client-side — restore after mount so SSR and
   // the first client render agree.
   useEffect(() => {
     try {
-      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null")
+      const saved = JSON.parse(localStorage.getItem(storageKey) ?? "null")
       if (saved?.url && saved.preview) {
         setUrl(saved.url)
         setPreview(saved.preview)
       }
     } catch {
-      localStorage.removeItem(STORAGE_KEY)
+      localStorage.removeItem(storageKey)
     }
-  }, [])
+  }, [storageKey])
 
   async function loadPreview(raw: string) {
     const target = raw.trim()
@@ -85,11 +89,11 @@ function CustomPage() {
     setError(null)
     setPreview(null)
     try {
-      const result = await previewCustomLink({ data: { url: target } })
+      const result = await previewCustomLink({ data: { url: target, region } })
       if (request !== latestRequest.current) return
       setPreview(result)
       localStorage.setItem(
-        STORAGE_KEY,
+        storageKey,
         JSON.stringify({ url: target, preview: result })
       )
     } catch (err) {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 import {
-  isEnglishOrChinese,
+  detectLanguage,
   isPrivateAddress,
   parseLinkPreview,
   stripTitleChrome,
@@ -53,7 +53,7 @@ describe("parseLinkPreview", () => {
       <meta property="og:image" content="/img/a.jpg">
       <meta property="article:published_time" content="2026-09-28T10:00:00Z">
     </head>`
-    const p = parseLinkPreview(html, "https://www.example.com/news/1")
+    const p = parseLinkPreview(html, "https://www.example.com/news/1", "en")
     expect(p.title).toBe("Chief & Co. cut rates")
     expect(p.description).toBe("Plain desc")
     expect(p.image).toBe("https://www.example.com/img/a.jpg")
@@ -63,31 +63,47 @@ describe("parseLinkPreview", () => {
 
   it("falls back to <title> and throws when there's no headline", () => {
     expect(
-      parseLinkPreview("<title>只有標題</title>", "https://a.tw/").title
+      parseLinkPreview("<title>只有標題</title>", "https://a.tw/", "zh").title
     ).toBe("只有標題")
-    expect(() => parseLinkPreview("<p>nothing</p>", "https://a.tw/")).toThrow()
+    expect(() =>
+      parseLinkPreview("<p>nothing</p>", "https://a.tw/", "zh")
+    ).toThrow()
   })
 })
 
-describe("isEnglishOrChinese", () => {
-  it("allows English and Chinese, blocks everything else", () => {
-    expect(isEnglishOrChinese("Fed cuts rates", "en-us")).toBe(true)
-    expect(isEnglishOrChinese("Fed cuts rates", "")).toBe(true)
-    expect(isEnglishOrChinese("央行意外降息", "en")).toBe(true)
-    expect(isEnglishOrChinese("央行意外降息", "zh-tw")).toBe(true)
-    expect(isEnglishOrChinese("日銀が利下げを決定", "ja")).toBe(false)
-    expect(isEnglishOrChinese("한국은행 금리 인하", "")).toBe(false)
-    expect(isEnglishOrChinese("ЦБ снизил ставку", "")).toBe(false)
-    expect(isEnglishOrChinese("La BCE baisse ses taux", "fr")).toBe(false)
+describe("detectLanguage", () => {
+  it("tells English from Chinese, rejects everything else", () => {
+    expect(detectLanguage("Fed cuts rates", "en-us")).toBe("en")
+    expect(detectLanguage("Fed cuts rates", "")).toBe("en")
+    expect(detectLanguage("央行意外降息", "en")).toBe("zh")
+    expect(detectLanguage("央行意外降息", "zh-tw")).toBe("zh")
+    expect(detectLanguage("日銀が利下げを決定", "ja")).toBe(null)
+    expect(detectLanguage("한국은행 금리 인하", "")).toBe(null)
+    expect(detectLanguage("ЦБ снизил ставку", "")).toBe(null)
+    expect(detectLanguage("La BCE baisse ses taux", "fr")).toBe(null)
   })
 
   it("blocks at parse time with the sentinel", () => {
     expect(() =>
       parseLinkPreview(
         '<html lang="es"><title>El banco central baja tipos</title>',
-        "https://a.es/"
+        "https://a.es/",
+        "en"
       )
     ).toThrow(UNSUPPORTED_LANGUAGE)
+  })
+
+  it("only accepts the edition's own language", () => {
+    const zh = '<html lang="zh-tw"><title>沈伯洋宣布啟動大洋流計畫</title>'
+    const en = '<html lang="en"><title>Fed cuts rates in surprise move</title>'
+    expect(parseLinkPreview(zh, "https://a.tw/", "zh").title).toBeTruthy()
+    expect(parseLinkPreview(en, "https://a.com/", "en").title).toBeTruthy()
+    expect(() => parseLinkPreview(zh, "https://a.tw/", "en")).toThrow(
+      UNSUPPORTED_LANGUAGE
+    )
+    expect(() => parseLinkPreview(en, "https://a.com/", "zh")).toThrow(
+      UNSUPPORTED_LANGUAGE
+    )
   })
 })
 

@@ -1,5 +1,6 @@
 export const NEWS_REGIONS = ["us", "tw"] as const
 export type NewsRegion = (typeof NEWS_REGIONS)[number]
+export type ContentLanguage = "en" | "zh"
 
 export const REGION_CONFIG: Record<
   NewsRegion,
@@ -9,6 +10,8 @@ export const REGION_CONFIG: Record<
     htmlLang: string
     timeZone: string
     promptLanguage: string
+    // The only language this edition's Custom tab accepts.
+    contentLanguage: ContentLanguage
   }
 > = {
   us: {
@@ -16,9 +19,8 @@ export const REGION_CONFIG: Record<
     locale: "en-US",
     htmlLang: "en",
     timeZone: "UTC",
-    // Explicit, not blank — a reader-submitted Chinese article on the U.S.
-    // edition would otherwise get its analysis back in Chinese.
     promptLanguage: "English",
+    contentLanguage: "en",
   },
   tw: {
     label: "臺灣",
@@ -26,6 +28,7 @@ export const REGION_CONFIG: Record<
     htmlLang: "zh-Hant-TW",
     timeZone: "Asia/Taipei",
     promptLanguage: "繁體中文 (Traditional Chinese)",
+    contentLanguage: "zh",
   },
 }
 
