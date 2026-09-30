@@ -11,12 +11,14 @@ Delivered in-character as a deadpan wire-service bulletin: total bureaucratic se
 1. **Ingest** — [Currents API](https://currentsapi.services/), [RapidAPI Real-Time News Data](https://rapidapi.com/), and [GDELT](https://www.gdeltproject.org/) are queried in parallel per category/region and deduped into one pool (by URL and normalized title). Which 2 providers are active per region is decided by a daily health-audit cron (`src/server/news/audit.ts`, `/api/cron/provider-audit`) rather than a hardcoded choice — a dead or quota-exhausted provider drops out and rejoins automatically once it recovers. `NEWS_EXCLUDE_PROVIDER` overrides this to force a provider out of rotation for debugging.
 2. **Triage** — Gemini (`gemini-3.5-flash-lite`) tags each story's primary decision-maker with an MBTI type and reasoning, dropping driver-less roundups and pure listicles.
 3. **Predict** — Gemini reasons a 30-day forecast timeline from that person's personality read. The default timeline is wire-red; user-created what-if branches (swapping in a different MBTI type) take the ink color of that personality family.
-4. **Serve** — Supabase caches ingested stories, triage results, and predictions per category/region/day; a manual "Refresh" re-triggers ingestion on demand. If an API quota is exhausted, cached articles are served instead of erroring out.
+4. **Serve** — Supabase caches ingested stories, triage results, and predictions per category/region/day; a manual "Refresh" re-triggers ingestion on demand. If an API quota is exhausted, cached articles are served instead of erroring out. A desk whose live check finds nothing new serves its cache for 30 minutes before checking again, instead of re-running fetch + triage on every page view.
+5. **Custom (自選)** — readers paste any English or Chinese news link into the Custom tab. It renders a social-style link preview (Open Graph / meta tags, fetched server-side with private-network addresses blocked). Analysis only runs when the reader clicks the button: the page is fetched again on the server, saved as a `custom`-category event that never shows up on the wire desks, and opened on the normal event page for the analysis and 30-day prediction, written in the tab's language. The last preview is kept in localStorage.
 
 ## Coverage
 
 - **Categories:** AI, Finance, Politics, International, Technology
 - **Editions:** U.S. (English) and Taiwan (繁體中文) — region picks the news source, the language of every generated field, and the UI chrome, with independent caches and cache-day rollover per region.
+- **Tabs:** U.S. / 臺灣 / Custom (自選). The last edition and tab are remembered in cookies, so opening the bare site address brings a returning reader back to where they left off.
 
 ## Stack
 
@@ -46,6 +48,8 @@ Requires the following environment variables (`.env.local` for local dev, or pro
 - `RAPIDAPI_KEY`, `RAPIDAPI_HOST`
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 - `CRON_SECRET` — authenticates the daily `/api/cron/provider-audit` run (Vercel sends it automatically once set; see `vercel.json`)
+
+Database migrations live in `supabase/migrations/` and are run by hand in the Supabase SQL Editor, in order. `0007_custom_category.sql` (adds the `custom` news category) must be applied before the Custom tab can run an analysis.
 
 ## Design
 
