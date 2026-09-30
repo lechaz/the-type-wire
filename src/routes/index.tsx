@@ -1,5 +1,6 @@
 import {
   createFileRoute,
+  redirect,
   stripSearchParams,
   useRouter,
 } from "@tanstack/react-router"
@@ -7,6 +8,7 @@ import { useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 import { getEvents } from "@/server/fns/events"
+import { getLastTab } from "@/server/fns/custom"
 import { NEWS_CATEGORIES, CATEGORY_LABELS } from "@/lib/mbti"
 import { NEWS_REGIONS } from "@/lib/region"
 import { stringsFor } from "@/lib/i18n"
@@ -31,6 +33,18 @@ export const Route = createFileRoute("/")({
     searchSchema.parse(search),
   search: {
     middlewares: [stripSearchParams({ category: "ai", region: "us" })],
+  },
+  // A fresh visit to the bare site reopens the reader's last tab/edition.
+  // Server-side only: in-app navigation to "/" is always a deliberate pick
+  // (e.g. clicking U.S.), and any explicit query (a shared desk link) is
+  // honored as-is. U.S.-wire readers get no redirect at all.
+  beforeLoad: async ({ location }) => {
+    if (typeof window !== "undefined" || location.searchStr) return
+    const last = await getLastTab()
+    if (last.custom)
+      throw redirect({ to: "/custom", search: { region: last.region } })
+    if (last.region === "tw")
+      throw redirect({ to: "/", search: { category: "ai", region: "tw" } })
   },
   loaderDeps: ({ search }) => ({
     category: search.category,

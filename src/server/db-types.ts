@@ -10,7 +10,7 @@
 // @supabase/supabase-js 2.110.
 
 export type NewsCategoryRow =
-  "ai" | "finance" | "politics" | "international" | "technology"
+  "ai" | "finance" | "politics" | "international" | "technology" | "custom"
 export type NewsRegionRow = "us" | "tw"
 export type MbtiTypeRow =
   | "INTJ"

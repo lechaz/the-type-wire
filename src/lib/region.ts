@@ -20,7 +20,9 @@ export const REGION_CONFIG: Record<
     locale: "en-US",
     htmlLang: "en",
     timeZone: "UTC",
-    promptLanguage: "",
+    // Explicit, not blank — a reader-submitted Chinese article on the U.S.
+    // edition would otherwise get its analysis back in Chinese.
+    promptLanguage: "English",
   },
   tw: {
     label: "臺灣",
@@ -34,6 +36,16 @@ export const REGION_CONFIG: Record<
   },
 }
 
+// Remember the reader's last edition and tab (wire vs. custom) so a fresh
+// visit reopens where they left off. Cookies rather than localStorage so
+// SSR can read them and redirect before rendering.
+export const REGION_COOKIE = "edition"
+export const TAB_COOKIE = "tab"
+
+// Sentinel error message (plain Errors cross the server-fn boundary, so the
+// client matches on the string) for a link that isn't English or Chinese.
+export const UNSUPPORTED_LANGUAGE = "UNSUPPORTED_LANGUAGE"
+
 // Courier Prime's uppercase+letter-spacing treatment reads fine on Latin
 // datelines but looks wrong applied to Han characters — TW mono labels drop
 // both instead of no-op'ing them.
@@ -45,7 +57,7 @@ export function monoLabelClass(region: NewsRegion): string {
 // route's head() (via its own ctx.matches) — same resolution rule in both
 // places: the event route's loaded event.region is the source of truth when
 // present (an event's language shouldn't flip with the toggle), otherwise
-// fall back to the "/" route's region search param, otherwise "us". Typed
+// fall back to the "/" or "/custom" route's region search param, otherwise "us". Typed
 // loosely since head()'s RouteMatch and useMatches()'s RouteMatch are
 // distinct generic instantiations of the same shape.
 type MatchLike = {
@@ -64,7 +76,9 @@ export function pickRegionFromMatches(
   )?.detail?.event?.region
   if (eventRegion) return eventRegion
 
-  const homeMatch = matches.find((m) => m.routeId === "/")
+  const homeMatch = matches.find(
+    (m) => m.routeId === "/" || m.routeId === "/custom"
+  )
   const searchRegion = (
     homeMatch?.search as { region?: NewsRegion } | undefined
   )?.region

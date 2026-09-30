@@ -4,7 +4,9 @@ import { pickRegionFromMatches } from "./region"
 import type { NewsRegion } from "./region"
 
 type EventLoaderData = {
-  detail?: { event?: { category?: NewsCategory; region?: NewsRegion } }
+  detail?: {
+    event?: { category?: NewsCategory | "custom"; region?: NewsRegion }
+  }
 }
 
 export function useCurrentRegion(): NewsRegion {

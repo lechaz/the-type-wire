@@ -42,6 +42,15 @@ const en = {
   roleTertiary: "Tertiary",
   roleInferior: "Inferior",
   backToTop: "Back to top",
+  customTab: "Custom",
+  customUrlLabel: "File your own story",
+  customUrlPlaceholder: "Paste a news article link",
+  customFetching: "Pulling the story…",
+  customPreviewFailed: "Couldn't read that link",
+  customAnalyze: "Run the analysis",
+  customAnalyzing: "Filing…",
+  customAnalyzeFailed: "Couldn't file that story. Try again shortly.",
+  customUnsupportedLanguage: "The wire only files English or Chinese stories.",
 }
 
 export type Strings = typeof en
@@ -87,6 +96,15 @@ const zhHant: Strings = {
   roleTertiary: "第三",
   roleInferior: "劣勢",
   backToTop: "回到頂端",
+  customTab: "自選",
+  customUrlLabel: "自選新聞",
+  customUrlPlaceholder: "貼上新聞連結",
+  customFetching: "讀取中…",
+  customPreviewFailed: "無法讀取此連結",
+  customAnalyze: "開始分析",
+  customAnalyzing: "分析中…",
+  customAnalyzeFailed: "無法分析此新聞，請稍後再試。",
+  customUnsupportedLanguage: "僅受理英文或中文新聞。",
 }
 
 const TABLE: Record<NewsRegion, Strings> = { us: en, tw: zhHant }

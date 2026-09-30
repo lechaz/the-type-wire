@@ -1,7 +1,13 @@
 import { useEffect, useState } from "react"
-import { Link } from "@tanstack/react-router"
+import { Link, useMatches } from "@tanstack/react-router"
 import { stringsFor } from "@/lib/i18n"
-import { NEWS_REGIONS, REGION_CONFIG, monoLabelClass } from "@/lib/region"
+import {
+  NEWS_REGIONS,
+  REGION_CONFIG,
+  REGION_COOKIE,
+  TAB_COOKIE,
+  monoLabelClass,
+} from "@/lib/region"
 import { useCurrentRegion, useEventRouteData } from "@/lib/use-current-region"
 import { cn } from "@/lib/utils"
 
@@ -17,6 +23,8 @@ function editionNumber(now: Date) {
 export function Masthead() {
   const region = useCurrentRegion()
   const eventRoute = useEventRouteData()
+  const leafRoute = useMatches({ select: (matches) => matches.at(-1)?.routeId })
+  const onCustom = leafRoute === "/custom"
   const t = stringsFor(region)
   const now = new Date()
   // The dateline is meant to read in the visitor's own local time, which
@@ -38,6 +46,16 @@ export function Masthead() {
       })
     )
   }, [region])
+
+  // Remember edition + tab for the next visit (read server-side by the "/"
+  // and "/custom" routes). Event pages keep whatever tab led to them.
+  useEffect(() => {
+    const cookie = (name: string, value: string) =>
+      (document.cookie = `${name}=${value}; path=/; max-age=31536000; samesite=lax`)
+    cookie(REGION_COOKIE, region)
+    if (leafRoute === "/" || leafRoute === "/custom")
+      cookie(TAB_COOKIE, leafRoute === "/custom" ? "custom" : "wire")
+  }, [region, leafRoute])
 
   return (
     <>
@@ -81,7 +99,7 @@ export function Masthead() {
               className={cn(
                 "px-1.5 py-0.5 transition-colors",
                 monoLabelClass(r),
-                region === r
+                region === r && !onCustom
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:text-foreground"
               )}
@@ -89,6 +107,19 @@ export function Masthead() {
               {REGION_CONFIG[r].label}
             </Link>
           ))}
+          <Link
+            to="/custom"
+            search={{ region }}
+            className={cn(
+              "px-1.5 py-0.5 transition-colors",
+              monoLabelClass(region),
+              onCustom
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t.customTab}
+          </Link>
         </div>
       </header>
       {/* Always rendered (visibility toggled, not presence) so this row's
@@ -102,8 +133,12 @@ export function Masthead() {
         )}
       >
         <Link
-          to="/"
-          search={{ category: eventRoute?.category ?? "ai", region }}
+          {...(eventRoute?.category === "custom"
+            ? { to: "/custom", search: { region } }
+            : {
+                to: "/",
+                search: { category: eventRoute?.category ?? "ai", region },
+              })}
           tabIndex={eventRoute ? 0 : -1}
           aria-hidden={!eventRoute}
           className={cn(

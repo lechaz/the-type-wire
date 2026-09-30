@@ -238,8 +238,10 @@ async function loadCachedEvents(
     }
   }
 
+  // The row type includes "custom", but this query filtered to one wire desk.
   return events.map((e) => ({
     ...e,
+    category,
     primaryMaker: primaryByEvent.get(e.id) ?? null,
   }))
 }
@@ -261,6 +263,12 @@ function freshnessStatus(
   return events[0].cache_date === todayCacheDate ? "ok" : "no_new"
 }
 
+// When a live check last found nothing new, per desk + cache day.
+// ponytail: per-instance memory — each warm instance re-checks at most once
+// per TTL; move to a DB row if instance count ever makes that matter.
+const EMPTY_CHECK_TTL_MS = 30 * 60_000
+const emptyCheckAt = new Map<string, number>()
+
 export const getEvents = createServerFn({ method: "GET" })
   .validator(GetEventsInput)
   .handler(async ({ data }) => {
@@ -268,7 +276,20 @@ export const getEvents = createServerFn({ method: "GET" })
     const db = getDb()
     const cacheDate = cacheDateFor(region)
 
+    const checkKey = `${region}/${category}/${cacheDate}`
     if (!forceRefresh) {
+      // A desk whose live check just came back empty would otherwise re-run
+      // the full feed fetch + Gemini triage on every page view (~3s TTFB
+      // measured on tw/ai) until something new finally gets kept.
+      // The undated query still returns today's rows first if another
+      // instance seeded some in the meantime.
+      if (Date.now() - (emptyCheckAt.get(checkKey) ?? 0) < EMPTY_CHECK_TTL_MS) {
+        const fallback = await loadCachedEvents(db, category, region)
+        return {
+          events: fallback,
+          status: freshnessStatus(fallback, cacheDate),
+        }
+      }
       const cached = await loadCachedEvents(db, category, region, cacheDate)
       if (cached.length > 0)
         return { events: cached, status: freshnessStatus(cached, cacheDate) }
@@ -296,6 +317,7 @@ export const getEvents = createServerFn({ method: "GET" })
       // came in, instead of wiping today's rows and showing an empty page
       // where cached articles used to be.
       if (kept.length === 0) {
+        emptyCheckAt.set(checkKey, Date.now())
         const fallback = await loadCachedEvents(db, category, region)
         return {
           events: fallback,

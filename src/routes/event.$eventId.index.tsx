@@ -158,7 +158,10 @@ function EventPage() {
           monoLabelClass(region)
         )}
       >
-        {CATEGORY_LABELS[region][event.category]} {t.desk}
+        {event.category === "custom"
+          ? t.customTab
+          : CATEGORY_LABELS[region][event.category]}{" "}
+        {t.desk}
       </p>
       <h1 className="mt-1 font-display text-2xl leading-tight font-bold text-foreground sm:text-3xl">
         {event.headline}
