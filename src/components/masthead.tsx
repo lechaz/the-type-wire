@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { Link, useMatches } from "@tanstack/react-router"
 import { stringsFor } from "@/lib/i18n"
+import type { NewsCategory } from "@/lib/mbti"
 import {
   NEWS_REGIONS,
   REGION_CONFIG,
@@ -61,9 +62,17 @@ export function Masthead() {
   return (
     <>
       <header className="border-b border-border px-6 pt-8 pb-3 text-center">
+        {/* Home of whichever tab the reader is on. */}
         <Link
-          to="/"
-          search={(prev) => ({ category: prev.category ?? "ai", region })}
+          {...(onCustom
+            ? { to: "/custom", search: { region } }
+            : {
+                to: "/",
+                search: (prev: { category?: NewsCategory }) => ({
+                  category: prev.category ?? "ai",
+                  region,
+                }),
+              })}
           className="inline-block"
         >
           <p className="font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
