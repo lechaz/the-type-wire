@@ -129,6 +129,25 @@ export function isEnglishOrChinese(text: string, declaredLang: string) {
   return !declaredLang || /^(en|zh)/.test(declaredLang)
 }
 
+// Page titles carry site/section chrome that shouldn't become the filed
+// headline. Observed live: "… | ETtoday國際新聞 | ETtoday新聞雲", "…｜廣告雜誌",
+// "… - BBC News", "…-最新新聞-新聞室-新聞中心-工業技術研究院". Pipes never
+// appear in real headlines; dashes do, so only a short trailing dash tail or
+// an unspaced chain of short Han segments counts as chrome. Never cuts the
+// title below MIN_HEADLINE chars.
+const MIN_HEADLINE = 8
+export function stripTitleChrome(title: string): string {
+  const cut = (at: number) =>
+    at >= MIN_HEADLINE ? title.slice(0, at).trim() : title
+  const pipe = title.search(/\s*[|｜]/)
+  if (pipe > 0) return stripTitleChrome(cut(pipe))
+  const hanChain = title.search(/(?:-\p{Script=Han}{2,12}){2,}$/u)
+  if (hanChain > 0) return cut(hanChain)
+  const dash = title.search(/\s[-–—]\s[^-–—]{1,30}$/)
+  if (dash > 0) return cut(dash)
+  return title
+}
+
 export function parseLinkPreview(html: string, pageUrl: string): LinkPreview {
   const meta = new Map<string, string>()
   for (const tag of html.match(/<meta\b[^>]*>/gi) ?? []) {
@@ -143,9 +162,10 @@ export function parseLinkPreview(html: string, pageUrl: string): LinkPreview {
   const pick = (...keys: string[]) =>
     keys.map((k) => meta.get(k)).find(Boolean) ?? ""
 
-  const title =
+  const title = stripTitleChrome(
     pick("og:title", "twitter:title") ||
-    (titleTag ? decodeEntities(titleTag) : "")
+      (titleTag ? decodeEntities(titleTag) : "")
+  )
   if (!title) throw new Error("No headline found at that link")
 
   const description = pick(

@@ -1,4 +1,4 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router"
+import { createFileRoute, notFound } from "@tanstack/react-router"
 import { useEffect, useRef, useState } from "react"
 import type { PointerEvent as ReactPointerEvent } from "react"
 import { getEventDetail, EVENT_NOT_FOUND } from "@/server/fns/event-detail"
@@ -40,36 +40,47 @@ export const Route = createFileRoute("/event/$eventId/")({
   // that same route's loader resolves, which is what makes the <title>
   // actually update on client-side navigation instead of staying frozen on
   // the previous page's until a hard refresh.
-  head: (ctx) => ({
-    meta: buildMetaTags({
-      pageTitle: ctx.loaderData?.detail.event.headline ?? null,
-      description: ctx.loaderData?.detail.event.summary ?? "",
-    }),
-  }),
+  // No loaderData (e.g. not-found) → leave the root's site-wide meta alone
+  // rather than render a blank "The Type Wire | " title.
+  head: (ctx) =>
+    ctx.loaderData
+      ? {
+          meta: buildMetaTags({
+            pageTitle: ctx.loaderData.detail.event.headline,
+            description: ctx.loaderData.detail.event.summary,
+          }),
+        }
+      : {},
   notFoundComponent: EventNotFound,
   component: EventPage,
 })
 
+// A missing story has no region to read, so this page files in both
+// languages. The back link is a full document load of bare "/", which the
+// server redirects to the reader's last tab/edition (see routes/index.tsx).
 function EventNotFound() {
   return (
     <main className="mx-auto max-w-5xl px-6 pt-8 pb-14 text-center">
       <p className="font-mono text-[11px] font-bold tracking-wide text-muted-foreground uppercase">
-        Story no longer on file
+        Story no longer on file · 此報導已不在存檔
       </p>
       <h1 className="mt-2 font-display text-2xl font-bold text-foreground">
         This dispatch has been pulled from the wire
       </h1>
-      <p className="mx-auto mt-2 max-w-[50ch] font-serif text-sm text-muted-foreground">
-        A later edition dropped it from today's coverage. It may still turn up
-        in a future refresh, or it may be gone for good.
+      <p className="mt-1 font-display text-xl font-bold text-foreground">
+        此則通訊已自通訊社撤下
       </p>
-      <Link
-        to="/"
-        search={{ category: "ai", region: "us" }}
+      <p className="mx-auto mt-2 max-w-[50ch] font-serif text-sm text-muted-foreground">
+        A later edition dropped it, or it aged out of the archive.
+        <br />
+        可能已被後續版次撤除，或已逾存檔期限。
+      </p>
+      <a
+        href="/"
         className="mt-4 inline-block font-mono text-xs font-bold text-foreground underline underline-offset-4 hover:text-wire-red"
       >
-        ← Back to the wire
-      </Link>
+        ← Back to the wire · 返回通訊社
+      </a>
     </main>
   )
 }

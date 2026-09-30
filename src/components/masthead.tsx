@@ -50,14 +50,18 @@ export function Masthead() {
   }, [region])
 
   // Remember edition + tab for the next visit (read server-side by the "/"
-  // and "/custom" routes). Event pages keep whatever tab led to them.
+  // and "/custom" routes). Event pages keep whatever tab led to them. A page
+  // with no known edition (a missing story, the 404) writes nothing — its
+  // "us" fallback isn't the reader's choice.
+  const onTabHome = leafRoute === "/" || leafRoute === "/custom"
+  const editionKnown = onTabHome || eventRoute !== null
   useEffect(() => {
     const cookie = (name: string, value: string) =>
       (document.cookie = `${name}=${value}; path=/; max-age=31536000; samesite=lax`)
-    cookie(REGION_COOKIE, region)
-    if (leafRoute === "/" || leafRoute === "/custom")
+    if (editionKnown) cookie(REGION_COOKIE, region)
+    if (onTabHome)
       cookie(TAB_COOKIE, leafRoute === "/custom" ? "custom" : "wire")
-  }, [region, leafRoute])
+  }, [region, leafRoute, onTabHome, editionKnown])
 
   return (
     <>

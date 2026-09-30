@@ -28,29 +28,50 @@ const AnalyzeInput = PreviewInput.extend({ region: z.enum(NEWS_REGIONS) })
 // resulting event page is public, so a client-supplied headline would let
 // anyone file arbitrary text under the wire's masthead. Only creates the
 // row; the event page's own loader runs ingest + prediction on first view,
-// same as any wire story. Upserting on the events unique key makes a repeat
-// analysis of the same link (same day, same edition) reuse its row.
+// same as any wire story. A repeat analysis of the same link (same day, same
+// edition) reuses the existing row untouched — overwriting it would replace
+// the already-generated summary with the page's raw, source-language
+// description, and ingest won't rerun to fix it (the roster already exists).
 export const analyzeCustomLink = createServerFn({ method: "POST" })
   .validator(AnalyzeInput)
   .handler(async ({ data }) => {
+    const db = getDb()
+    const cacheDate = cacheDateFor(data.region)
+    const findEvent = async (sourceUrl: string) => {
+      const { data: rows, error } = await db
+        .from("events")
+        .select("id")
+        .eq("category", "custom")
+        .eq("region", data.region)
+        .eq("source_url", sourceUrl)
+        .eq("cache_date", cacheDate)
+        .limit(1)
+      if (error) throw new Error(error.message)
+      return rows[0]?.id
+    }
+
+    const existing = await findEvent(data.url)
+    if (existing) return { eventId: existing }
+
     const preview = await fetchLinkPreview(data.url)
-    const { data: event, error } = await getDb()
-      .from("events")
-      .upsert(
-        {
-          category: "custom",
-          region: data.region,
-          headline: preview.title,
-          source_name: preview.siteName,
-          source_url: preview.url,
-          published_at: preview.publishedAt ?? new Date().toISOString(),
-          summary: preview.description,
-          cache_date: cacheDateFor(data.region),
-        },
-        { onConflict: "region,category,source_url,cache_date" }
-      )
-      .select("id")
-      .single()
+    const { error } = await db.from("events").upsert(
+      {
+        category: "custom",
+        region: data.region,
+        headline: preview.title,
+        source_name: preview.siteName,
+        source_url: preview.url,
+        published_at: preview.publishedAt ?? new Date().toISOString(),
+        summary: preview.description,
+        cache_date: cacheDate,
+      },
+      {
+        onConflict: "region,category,source_url,cache_date",
+        ignoreDuplicates: true,
+      }
+    )
     if (error) throw new Error(error.message)
-    return { eventId: event.id }
+    const eventId = await findEvent(preview.url)
+    if (!eventId) throw new Error("Filed story row not found")
+    return { eventId }
   })
