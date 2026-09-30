@@ -5,8 +5,6 @@ export const REGION_CONFIG: Record<
   NewsRegion,
   {
     label: string
-    country: string
-    lang: string
     locale: string
     htmlLang: string
     timeZone: string
@@ -15,8 +13,6 @@ export const REGION_CONFIG: Record<
 > = {
   us: {
     label: "U.S.",
-    country: "US",
-    lang: "en",
     locale: "en-US",
     htmlLang: "en",
     timeZone: "UTC",
@@ -26,9 +22,6 @@ export const REGION_CONFIG: Record<
   },
   tw: {
     label: "臺灣",
-    country: "TW",
-    // Currents API takes plain ISO 639-1 codes, not BCP47 tags like zh-Hant.
-    lang: "zh",
     locale: "zh-Hant-TW",
     htmlLang: "zh-Hant-TW",
     timeZone: "Asia/Taipei",
